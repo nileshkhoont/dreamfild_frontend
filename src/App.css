@@ -1,0 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+/* #root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+} */
+
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Karla", sans-serif;
+
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 2em #0046f6aa);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #0046f6aa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+  /* margin-top: 3px; */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+body {
+  background-color: #F5F6FA !important;
+}
+
+.css-1lwhjos-MuiPaper-root-MuiDrawer-paper {
+  border: none !important;
+}
+
+.css-1ulznza-MuiListItemAvatar-root {
+  min-width: 45px !important;
+}
+
+.css-1hyc0le-MuiListItem-root {
+  padding: 4px 10px !important;
+}
+
+
+/* Custom Form Fields */
+
+.custom-textfield .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ced4da;
+}
+
+.custom-textfield .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: none;
+  outline: none;
+}
+
+.custom-textfield .react-datepicker__close-icon {
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.custom-textfield.react-datepicker__close-icon-fix .react-datepicker__close-icon {
+  right: 15px !important;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+
+:root {
+  /* BASIC COLOR */
+  --textColor: #191919;
+  --backgroundColor: #EFEFEF;
+  --hoverBackgroundColor: #f4f4f4;
+  --selectedBackgroundColor: #e0e7ff;
+  --borderColor: #1b1a1a;
+  --boxShadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  --inputBorderColor: #808080;
+
+
+  /* Icon color and bg */
+  --redShadeBg: #ffe3e4;
+  --redShadeColor: #ff4d52;
+
+  --greenShadeBg: #daf5e6;
+  --greenShadeColor: #28c76f;
+
+  --yellowShadeBg: #ffefe0;
+  --yellowShadeColor: #ff9e42;
+
+  --blueShadeBg: #d7f5f7;
+  --blueShadeColor: #00bcd1;
+
+  --grayShadeBg: #8e919e;
+  --grayShadeColor: #6c757d;
+
+  /* TABLE COLORS */
+  --tableHeaderBackgroundColor: #ededed;
+
+
+  /* BUTTON COLORS */
+  --purpleShadeBg: #343a40;
+  --purpleShadeBg2: #adb5bd;
+  --grayShadeBg: #6c757d;
+
+  /*Card box Shadow*/
+  --cardBoxShadow: rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px;
+
+  --successTextColor: #2e7d32;
+  --successBgColor: #eaf2ea;
+
+
+
+  /* text Fields  */
+
+  --textFieldBorderColor: #ced4da;
+  --textFieldFocusBorderColor: #343a40;
+
+}
+
+
+
+
+
+
+
+.custom-quill .ql-toolbar {
+  border-radius: 8px 8px 0 0;
+  background: #f3f2fc;
+  border: none;
+  border-bottom: 1.5px solid #e0e0e0;
+  padding: 8px 12px;
+}
+
+.custom-quill .ql-container {
+  border-radius: 0 0 8px 8px;
+  background: #f7f9fc;
+  border: none;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.custom-quill .ql-container.ql-snow {
+  border: none;
+}
+
+.custom-quill .ql-toolbar.ql-snow {
+  border: none;
+}
+
+.custom-quill .ql-container:focus-within {
+  box-shadow: 0 0 0 2px var(--purpleShadeBg);
+  border-color: var(--purpleShadeBg);
+}
+
+.custom-quill .ql-editor {
+  min-height: 100px;
+  font-size: 1rem;
+  color: var(--textColor);
+}
+
+.custom-quill .ql-picker-label {
+  color: var(--purpleShadeBg) !important;
+}
+
+.custom-quill .ql-active, .custom-quill .ql-picker-item.ql-selected {
+  color: var(--purpleShadeBg) !important;
+}
+
+.custom-quill .ql-toolbar button.ql-active {
+  background: #ede7fe !important;
+  color: var(--purpleShadeBg) !important;
+}
+
+/* Custom DatePicker Calendar Styling for Report (Final: selected date bg --purpleShadeBg, text white; hover --purpleShadeBg2, text --purpleShadeBg) */
+.custom-datepicker-calendar .react-datepicker__day.custom-datepicker-selected,
+.custom-datepicker-calendar .react-datepicker__day--in-selecting-range,
+.custom-datepicker-calendar .react-datepicker__day--in-range {
+  background-color: var(--purpleShadeBg) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+}
+
+.custom-datepicker-calendar .react-datepicker__day.custom-datepicker-selected:hover,
+.custom-datepicker-calendar .react-datepicker__day--in-selecting-range:hover,
+.custom-datepicker-calendar .react-datepicker__day--in-range:hover {
+  background-color: var(--purpleShadeBg2) !important;
+  color: var(--purpleShadeBg) !important;
+}
+
+.custom-datepicker-calendar .react-datepicker__day.custom-datepicker-day:hover {
+  background-color: var(--purpleShadeBg2) !important;
+  color: var(--purpleShadeBg) !important;
+  border-radius: 6px !important;
+}
