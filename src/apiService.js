@@ -208,6 +208,40 @@ export const apiSlice = createApi({
       providesTags: ["TallyOrders"],
     }),
 
+    getBanks: builder.query({
+      query: () => ({
+        url: "/banks",
+        method: "GET",
+      }),
+      providesTags: ["Banks"],
+    }),
+
+    addBank: builder.mutation({
+      query: (data) => ({
+        url: "/banks",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Banks"],
+    }),
+
+    updateBank: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/banks/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Banks"],
+    }),
+
+    deleteBank: builder.mutation({
+      query: (id) => ({
+        url: `/banks/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Banks"],
+    }),
+
 
     getAttendance: builder.mutation({
       query: (body) => ({
@@ -584,6 +618,10 @@ export const {
   useDeleteSocialMediaMutation,
   useUpdateSocialMediaStatusMutation,
   useGetTallyOrdersQuery,
+  useGetBanksQuery,
+  useAddBankMutation,
+  useUpdateBankMutation,
+  useDeleteBankMutation,
   
   useGetAttendanceMutation,
   useGetLeaveMutation,

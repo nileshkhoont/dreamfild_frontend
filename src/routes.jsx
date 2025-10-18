@@ -20,6 +20,7 @@ import { AuthImageProvider } from "./components/Auth/AuthImageProvider";
 import Dealer from "./components/Dealer/Dealer";
 import SocialMedia from "./components/SocialMedia/SocialMedia";
 import TallyOrders from "./components/TallyOrders/TallyOrders";
+import Bank from "./components/Bank/Bank";
 
 const AppRoutes = () => {
   return (
@@ -60,6 +61,7 @@ const AppRoutes = () => {
               <Route path="/dealers" element={<Dealer />} />
               <Route path="/social-media" element={<SocialMedia />} />
               <Route path="/tally-orders" element={<TallyOrders />} />
+              <Route path="/banks" element={<Bank />} />
             </Route>
           </Route>
 

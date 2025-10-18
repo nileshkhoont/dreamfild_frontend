@@ -90,6 +90,12 @@ const menuItems = [
     activeIcon: BusinessIcon,
   },
   {
+    path: "/banks",
+    label: "Banks",
+    icon: BusinessOutlinedIcon,
+    activeIcon: BusinessIcon,
+  },
+  {
     path: "/attendance",
     label: "Attendance",
     icon: FaListCheck,
