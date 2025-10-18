@@ -78,6 +78,12 @@ const menuItems = [
     activeIcon: BusinessIcon,
   },
   {
+    path: "/media",
+    label: "Media",
+    icon: IoCloudUploadOutline, // Use a relevant icon, imported above
+    activeIcon: IoDocumentAttachSharp, // Use a filled/active icon
+  },
+  {
     path: "/tally-orders",
     label: "Tally Orders",
     icon: BusinessOutlinedIcon,

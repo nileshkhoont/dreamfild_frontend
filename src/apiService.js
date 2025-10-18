@@ -622,6 +622,32 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Dealers"],
     }),
+
+    // --- MEDIA MODULE START ---
+    getMedia: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/media?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["Media"],
+    }),
+    updateMediaStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/media/status/${id}`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: ["Media"],
+    }),
+    uploadMedia: builder.mutation({
+      query: (body) => ({
+        url: "/media/upload",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Media"],
+    }),
+    // --- MEDIA MODULE END ---
   }),
 });
 
@@ -688,6 +714,10 @@ export const {
   useUpdatePunchCorrectionStatusMutation,
   useUploadDocumentMutation,
   useGetAllDocumentsQuery,
-  useDeleteDocumentMutation
+  useDeleteDocumentMutation,
+
+  useGetMediaQuery,
+  useUpdateMediaStatusMutation,
+  useUploadMediaMutation,
 
 } = apiSlice;

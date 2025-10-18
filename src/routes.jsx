@@ -21,6 +21,7 @@ import Dealer from "./components/Dealer/Dealer";
 import SocialMedia from "./components/SocialMedia/SocialMedia";
 import TallyOrders from "./components/TallyOrders/TallyOrders";
 import Bank from "./components/Bank/Bank";
+import MediaList from "./components/Media/MediaList"; // <-- Add this import
 
 const AppRoutes = () => {
   return (
@@ -62,6 +63,7 @@ const AppRoutes = () => {
               <Route path="/social-media" element={<SocialMedia />} />
               <Route path="/tally-orders" element={<TallyOrders />} />
               <Route path="/banks" element={<Bank />} />
+              <Route path="/media" element={<MediaList />} /> {/* <-- Add this line */}
             </Route>
           </Route>
 
