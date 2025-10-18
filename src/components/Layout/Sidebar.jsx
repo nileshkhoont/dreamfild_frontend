@@ -79,6 +79,12 @@ const menuItems = [
     activeIcon: FaListCheck,
   },
   {
+    path: "/dealers",
+    label: "Dealers",
+    icon: BusinessOutlinedIcon,
+    activeIcon: BusinessIcon,
+  },
+  {
     path: "/reports",
     label: "Reports",
     icon: BarChartOutlinedIcon,

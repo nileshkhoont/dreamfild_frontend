@@ -149,6 +149,13 @@ export const apiSlice = createApi({
         return response;
       },
     }),
+        getDealers: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/dealer?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["Dealers"],
+    }),
 
 
     getAttendance: builder.mutation({
@@ -519,6 +526,7 @@ export const apiSlice = createApi({
 
 export const {
   useLoginMutation,
+  useGetDealersQuery,
   
   useGetAttendanceMutation,
   useGetLeaveMutation,

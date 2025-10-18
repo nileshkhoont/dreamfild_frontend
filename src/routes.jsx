@@ -17,6 +17,7 @@ import EditProfile from "./components/Profile/EditProfile";
 import ViewProfile from "./components/Profile/ViewProfile";
 import DocumentList from "./components/Upload Documents/DcoumentList"; // <-- Import the DocumentList
 import { AuthImageProvider } from "./components/Auth/AuthImageProvider";
+import Dealer from "./components/Dealer/Dealer";
 
 const AppRoutes = () => {
   return (
@@ -54,6 +55,7 @@ const AppRoutes = () => {
               <Route path="/edit-profile/:id" element={<EditProfile />} />
               <Route path="/view-profile/:id" element={<ViewProfile />} />
               <Route path="/upload-documents" element={<DocumentList />} /> {/* <-- Use DocumentList here */}
+              <Route path="/dealers" element={<Dealer />} />
             </Route>
           </Route>
 
