@@ -66,9 +66,8 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     if (
       result?.error?.status === 404 &&
       result?.error?.data?.responseMessage ===
-        "User not found. Please remove the old token and try again."
+      "User not found. Please remove the old token and try again."
     ) {
-    
       const refreshToken = localStorage.getItem("refreshToken");
       const currentToken = localStorage.getItem("jwt");
 
@@ -149,7 +148,7 @@ export const apiSlice = createApi({
         return response;
       },
     }),
-        getDealers: builder.query({
+    getDealers: builder.query({
       query: ({ page = 1, limit = 10 }) => ({
         url: `/dealer?page=${page}&limit=${limit}`,
         method: "GET",
@@ -326,13 +325,13 @@ export const apiSlice = createApi({
       }),
     }),
 
-    registerUser: builder.mutation({
+    registerDealer: builder.mutation({
       query: (userData) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/register`,
+        url: "/dealer/register", // Ensure this matches your backend route
         method: "POST",
-        body: userData,
+        body: userData, // Correctly pass the payload
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ["Dealers"], // Invalidate the Dealers tag to refresh the dealer list
     }),
 
     sendMessage: builder.mutation({
@@ -606,6 +605,23 @@ export const apiSlice = createApi({
         body: { documentId },
       }),
     }),
+
+    updateDealerStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/dealer/status/${id}`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: ["Dealers"],
+    }),
+    addDealerUser: builder.mutation({
+      query: (userData) => ({
+        url: "/dealer/add-user",
+        method: "POST",
+        body: userData,
+      }),
+      invalidatesTags: ["Dealers"],
+    }),
   }),
 });
 
@@ -622,7 +638,7 @@ export const {
   useAddBankMutation,
   useUpdateBankMutation,
   useDeleteBankMutation,
-  
+
   useGetAttendanceMutation,
   useGetLeaveMutation,
   useGetDashboardInfoQuery,
@@ -633,6 +649,9 @@ export const {
 
   useRegisterUserMutation,
   useSendMessageMutation,
+  useRegisterDealerMutation,
+  useUpdateDealerStatusMutation,
+  useAddDealerUserMutation,
   useShowMessageQuery,
   useDeleteUserMutation,
   useDisableUserMutation,
@@ -655,7 +674,7 @@ export const {
   useSetLocationMutation,
   useGetLocationQuery,
 
-  useGetUserDetailsByIdQuery, 
+  useGetUserDetailsByIdQuery,
   useToggleWorkFromHomeMutation,
   useApplyWorkFromHomeMutation,
   usePendingWorkFromHomeQuery,
@@ -670,5 +689,5 @@ export const {
   useUploadDocumentMutation,
   useGetAllDocumentsQuery,
   useDeleteDocumentMutation
-  
+
 } = apiSlice;
