@@ -49,12 +49,9 @@ import {
   useSetLocationMutation,
   useGetLocationQuery,
 } from "../../apiService";
-import { useGetAllNotificationsByUserIdWithDeletedQuery } from "../../API/notification"; // Add this import
 import "../../App.css";
 import { FaLocationDot } from "react-icons/fa6";
 import LocationModal from "./LocationModal";
-import { IoIosNotificationsOutline } from "react-icons/io";
-import { useMarkNotificationsAsReadMutation } from "../../API/notification";
 import DeleteDialogBox from "../../components/DeleteDialogBox";
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -177,7 +174,6 @@ const StyledIconWrapper = styled(Box)(({ theme }) => ({
 
 const Navigation = () => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notifications, setNotifications] = useState(3);
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const [locationError, setLocationError] = useState(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -209,10 +205,7 @@ const Navigation = () => {
   const locationPath = useLocation();
   const { isAuthenticated, isLoading, logout, user, triggerPunch } = useAuth();
   const userFromLocalStorage = JSON.parse(localStorage.getItem("user") || "{}");
-  const { data: notificationData } =
-    useGetAllNotificationsByUserIdWithDeletedQuery(userFromLocalStorage?._id);
-  const notificationsData = notificationData?.notifications || [];
-  const unreadCount = notificationsData.filter((n) => !n.read).length;
+
 
   const getCurrentUser = () => {
     return user;
@@ -887,22 +880,6 @@ const Navigation = () => {
     },
   ];
 
-  const [markNotificationsAsRead] = useMarkNotificationsAsReadMutation();
-
-  const handleNotifOpen = async (event) => {
-    setNotifAnchorEl(event.currentTarget);
-    // Mark all notifications as read when opening the menu
-    if (notificationsData && notificationsData.length > 0) {
-      const unreadIds = notificationsData.filter(n => !n.read).map(n => n._id);
-      if (unreadIds.length > 0) {
-        try {
-          await markNotificationsAsRead({ ids: unreadIds });
-        } catch (e) {
-          // Optionally handle error
-        }
-      }
-    }
-  };
 
   const handleNotifClose = () => {
     setNotifAnchorEl(null);

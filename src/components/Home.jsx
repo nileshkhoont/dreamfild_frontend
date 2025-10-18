@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import NotificationCard from "./Layout/NotificationCard";
 
 import {
   Box,
@@ -50,10 +49,6 @@ import { ConfirmationDialog } from "./Layout/ConfirmationDialog";
 
 import { Check, Close } from "@mui/icons-material";
 import { useAuth } from "../utils/AuthContext";
-import { IoMdNotifications, IoMdNotificationsOff } from "react-icons/io";
-// ...existing code...
-import { useGetNotificationsByUserIdQuery } from "../API/notification";
-import { useSoftDeleteNotificationMutation } from "../API/notification";
 import { X } from "lucide-react"; // or use @mui/icons-material/Close
 
 const truncateText = (text, maxLength) => {
@@ -183,14 +178,6 @@ function Home() {
   const role = loggedInUser?.role;
   const userId = loggedInUser?._id;
 
-  // Fetch notifications from API (pass userId in body for POST)
-  const {
-    data: dbNotifications,
-    isLoading: notifLoading,
-    error: notifError,
-    refetch: refetchNotifications,
-  } = useGetNotificationsByUserIdQuery(userId);
-  console.log("userId for notifications:", userId);
   const { triggerPunch, punchEvent } = useAuth();
 
   const { data, isLoading, refetch } = useGetDashboardInfoQuery();
@@ -240,7 +227,6 @@ function Home() {
   const [updateLeaveStatus] = useUpdateLeaveStatusMutation();
   const [punchIn] = usePunchInMutation();
   const [punchOut] = usePunchOutMutation();
-  const [softDeleteNotification] = useSoftDeleteNotificationMutation();
   const [updateWorkFromHomeStatus] = useUpdateWorkFromHomeStatusMutation();
   const [updatePunchCorrectionStatus] =
     useUpdatePunchCorrectionStatusMutation();
@@ -289,45 +275,6 @@ function Home() {
       // handle error
     }
   };
-
-  const handleDeleteNotification = async (id) => {
-    try {
-      const res = await softDeleteNotification(id).unwrap();
-      setSnackbar({
-        open: true,
-        message: res.message,
-        severity: res.success ? "success" : "error",
-      });
-      // No need to manually refetch, RTK Query will update due to invalidatesTags
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err?.data?.message || "Failed to delete notification",
-        severity: "error",
-      });
-    }
-  };
-
-  // ...socket.io logic removed...
-
-  useEffect(() => {
-    const handleStorage = (event) => {
-      if (event.key === "leaveNotifications" && event.newValue) {
-        const arr = JSON.parse(event.newValue);
-        setLeaveNotifications(arr);
-        // Do NOT remove from localStorage!
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-
-    // Initial check
-    const notifArr = localStorage.getItem("leaveNotifications");
-    if (notifArr) {
-      setLeaveNotifications(JSON.parse(notifArr));
-      // Do NOT remove from localStorage!
-    }
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
 
   // ...socket.io logic removed...
 
@@ -932,113 +879,6 @@ function Home() {
           </Paper>
         </Grid>
       </Grid>
-
-      {/* Celebrations Container - Only for users, full width */}
-      {role === "user" && (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 0,
-            // pr: 3,
-            bgcolor: "transparent",
-            borderRadius: 3,
-            width: "100%",
-            mb: 3,
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            sx={{
-              background: "white",
-              p: 3,
-              borderRadius: "12px 12px 0 0",
-              pb: 1,
-
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IoMdNotifications size={22} color="black" />
-              </Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: "black",
-                  fontSize: "1.2rem",
-                  lineHeight: 1,
-                  mb: 0,
-                }}
-              >
-                Notifications
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Scrollable Content */}
-          <Box
-            sx={{
-              height: "280px",
-              overflow: "auto",
-              p: 3,
-              bgcolor: "#ffffff",
-              borderRadius: "0 0 12px 12px",
-              border: "1px solid #e5e7eb",
-              borderTop: "none",
-              pt: 1,
-            }}
-          >
-            <Stack spacing={1}>
-              {notifLoading ? (
-                <Typography>Loading notifications...</Typography>
-              ) : notifError ? (
-                <Typography color="error">
-                  Failed to load notifications
-                </Typography>
-              ) : Array.isArray(dbNotifications?.notifications) &&
-                dbNotifications.notifications.length > 0 ? (
-                dbNotifications.notifications.map((notif, idx) => (
-                  <Box
-                    key={notif._id || idx}
-                    sx={{ display: "flex", alignItems: "center" }}
-                  >
-                    <NotificationCard
-                      message={notif.message}
-                      status={notif.status}
-                      refType={notif.refType}
-                      type={notif.type}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteNotification(notif._id)}
-                      sx={{ ml: 1 }}
-                      aria-label="Delete notification"
-                    >
-                      <X size={18} />
-                    </IconButton>
-                  </Box>
-                ))
-              ) : (
-                <NoDataMessage
-                  icon={IoMdNotificationsOff}
-                  message="No notifications at the moment."
-                />
-              )}
-              {/* REMOVED: FestivalEventCard, EmployeeEventCard for birthday/anniversary */}
-            </Stack>
-          </Box>
-        </Paper>
-      )}
 
       {/* Second Row - Attendance/Leaves */}
       <Grid container spacing={3} mb={3} sx={{ width: "100%", mx: "-12px"}}>
