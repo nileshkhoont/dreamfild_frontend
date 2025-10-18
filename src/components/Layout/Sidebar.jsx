@@ -46,7 +46,6 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import { useAuth } from "../../utils/AuthContext";
-import { useGetOrganizationFeaturesQuery } from "../../API/organization";
 import { useSetLocationMutation, useGetLocationQuery } from "../../apiService";
 import {
   Dialog,
@@ -520,11 +519,6 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
 
   // Skip the features API call for super-admin users
   const isSuperAdmin = loggedInUser?.role === "super-admin";
-  const { data: featuresData } = useGetOrganizationFeaturesQuery(
-    loggedInUser?.organization?._id,
-    { skip: isSuperAdmin } // Skip API call for super-admin
-  );
-  // console.log(featuresData)
 
   // Get organization name
   const organizationName = useMemo(() => {
@@ -577,48 +571,10 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
       );
     }
 
-    // Then apply API feature-based filtering if the feature data is available
-    if (featuresData?.responseData && featuresData.responseData.length > 0) {
-      const featureNames = featuresData.responseData.map((feature) =>
-        feature.name.toLowerCase()
-      );
-      let filteredItems = roleBasedItems.filter((item) =>
-        featureNames.includes(item.label.toLowerCase())
-      );
-
-      // Ensure "View Task" is only added for the "user" role
-      if (
-        loggedInUser?.role === "user" &&
-        featureNames.includes("tasks") &&
-        !filteredItems.some((item) => item.label === "View Task")
-      ) {
-        filteredItems.push({
-          path: "/view-task",
-          label: "View Task",
-          icon: AssignmentOutlinedIcon,
-          activeIcon: AssignmentIcon,
-        });
-      }
-
-      return filteredItems;
-    }
-
-    if (
-      featuresData &&
-      (!featuresData.responseData || featuresData.responseData.length === 0)
-    ) {
-      return [
-        {
-          path: "/dashboard",
-          label: "No Features Available",
-          icon: HelpOutlineIcon,
-          activeIcon: HelpOutlineIcon,
-        },
-      ];
-    }
+    // Feature-based filtering removed
 
     return roleBasedItems;
-  }, [loggedInUser, featuresData]);
+  }, [loggedInUser]);
 
   const renderMenuItems = useMemo(
     () =>

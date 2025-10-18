@@ -110,7 +110,6 @@ export const {
   useToggleOrganizationStatusMutation,
   useSoftDeleteOrganizationMutation,
   useGetAllFeaturesQuery, // Export the new query hook
-  useGetOrganizationFeaturesQuery,
 
   useAddFeatureMutation,
   useDeleteFeatureMutation,

@@ -44,10 +44,7 @@ import { CustomLoader, LoaderContainer } from "../Layout/CustomLoader";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useTheme } from "@mui/material/styles";
-// ...existing code...
-import WorkFromHomeModal from "./WorkFromHomeModal";
 import Snackbar from "@mui/material/Snackbar";
-import PunchCorrectionDialog from "./PunchCorrectionDialog";
 
 const Container = styled(Box)({
   margin: "0 auto",
@@ -599,28 +596,6 @@ const SingleEmployeeAttendance = ({
                       >
                         <TableCell>
                           {formatDate(detail.date)}
-                          {detail.isWorkFromHome && (
-                            <span
-                              style={{
-                                marginLeft: 8,
-                                padding: "2px 8px",
-                                backgroundColor:
-                                  "var(--backgroundColor, #EFEFEF)",
-                                color: "var(--textColor, #191919)",
-                                borderRadius: "8px",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                height: "22px",
-                                minWidth: "40px",
-                                verticalAlign: "middle",
-                              }}
-                            >
-                              RW
-                            </span>
-                          )}
                         </TableCell>
                         <TableCell>
                           <StatusBadge sx={{ backgroundColor: "#0046f61a" }}>
@@ -705,31 +680,7 @@ const SingleEmployeeAttendance = ({
           </StyledTableContainer>
         )}
       </CardContent>
-      {/*WorkFromHome */}
-      <WorkFromHomeModal
-        open={applyModalOpen}
-        onClose={() => {
-          setApplyModalOpen(false);
-          setSubmitted(false);
-          setWfhReason("");
-          setWfhDateRange([null, null]);
-        }}
-        startDate={wfhDateRange[0]}
-        endDate={wfhDateRange[1]}
-        setDateRange={setWfhDateRange}
-        reason={wfhReason}
-        setReason={setWfhReason}
-        submitted={submitted}
-        setSubmitted={setSubmitted}
-        showSnackbar={showSnackbar}
-      />
-      <PunchCorrectionDialog
-        open={correctionDialogOpen}
-        onClose={() => setCorrectionDialogOpen(false)}
-        attendanceId={selectedRecord?.attendanceId || selectedRecord?._id}
-        initialTime={selectedRecord?.punchOut || ""}
-        showSnackbar={showSnackbar}
-      />
+    
     </Card>
   );
 };
@@ -1450,7 +1401,7 @@ return { presentDays, leaveDays, totalWorkingHours };
                                 >
                                   <TableCell sx={{ fontWeight: 500 }}>
                                     {record.name}
-                                    {record.isWorkFromHome ? (
+                                    {false ? (
                                       <span
                                         style={{
                                           marginLeft: 8,

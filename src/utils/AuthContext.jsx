@@ -57,23 +57,17 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Login: Set storage, connect socket, redirect
   const handleLogin = (data) => {
-    const { authToken, refreshToken, user } = data.responseData;
+    // New API: { statusCode, data: { userData }, message }
+    const userData = data?.data?.userData;
+    if (!userData?.token) return;
 
-    if (!authToken || !refreshToken) return;
-
-    localStorage.setItem("jwt", authToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem("jwt", userData.token);
     localStorage.setItem("isAuthenticated", "true");
-
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-      setUser(user); // <-- add this
-  // connectSocket(user.userId);
-    }
-
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
     setIsAuthenticated(true);
 
-    const userRole = user?.role;
+    const userRole = userData?.role;
     if (userRole === "super-admin") {
       navigate("/organization", { replace: true });
     } else {

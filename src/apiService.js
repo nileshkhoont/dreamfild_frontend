@@ -22,7 +22,7 @@ const getFilenameFromHeaders = (headers) => {
 };
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin`,
+  baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("jwt");
     if (token) {
@@ -134,29 +134,22 @@ export const apiSlice = createApi({
   endpoints: (builder) => ({
     login: builder.mutation({
       query: (userData) => ({
-        url: "/login",
+        url: "/auth/login",
         method: "POST",
         body: userData,
       }),
       transformResponse: (response) => {
-        if (response?.statusCode === 200 && response?.responseData) {
-          const { authToken, refreshToken, user } = response.responseData;
-          localStorage.setItem("jwt", authToken);
-          localStorage.setItem("refreshToken", refreshToken);
+        // New API: { statusCode, data: { userData }, message }
+        if (response?.statusCode === 200 && response?.data?.userData?.token) {
+          const { token, ...userData } = response.data.userData;
+          localStorage.setItem("jwt", token);
           localStorage.setItem("isAuthenticated", "true");
-          if (user) {
-            localStorage.setItem("user", JSON.stringify(user));
-            // No role-based logout here!
-          }
+          localStorage.setItem("user", JSON.stringify(userData));
         }
         return response;
       },
     }),
 
-    getUsers: builder.query({
-      query: () => "/list/users",
-      providesTags: ["User"],
-    }),
 
     getAttendance: builder.mutation({
       query: (body) => ({
@@ -243,7 +236,7 @@ export const apiSlice = createApi({
 
     registerUser: builder.mutation({
       query: (userData) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/register`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/register`,
         method: "POST",
         body: userData,
       }),
@@ -286,7 +279,7 @@ export const apiSlice = createApi({
     // Add the punch status query here
     getPunchStatus: builder.query({
       query: () => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/punch-status`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/punch-status`,
         method: "GET",
       }),
       providesTags: ["PunchStatus"],
@@ -294,7 +287,7 @@ export const apiSlice = createApi({
 
     punchIn: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/punch-in`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/punch-in`,
         method: "POST",
         body: data,
       }),
@@ -303,7 +296,7 @@ export const apiSlice = createApi({
 
     punchOut: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/punch-out`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/punch-out`,
         method: "POST",
         body: data,
       }),
@@ -312,7 +305,7 @@ export const apiSlice = createApi({
 
     punchoutCorrection: builder.mutation({
       query: ({ attendanceId, requestedPunchOutTime, reason }) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/attendance/punchout-correction`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/attendance/punchout-correction`,
         method: "POST",
         body: { attendanceId, requestedPunchOutTime, reason },
       }),
@@ -323,7 +316,7 @@ export const apiSlice = createApi({
 
     submitPunchCorrection: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/attendance/submit-punch-correction`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/attendance/submit-punch-correction`,
         method: "POST",
         body: data,
       }),
@@ -341,7 +334,7 @@ export const apiSlice = createApi({
 
     viewProfile: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/view-profile`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/admin/view-profile`,
         method: "POST",
         body: data, // Pass userId in the body
       }),
@@ -349,7 +342,7 @@ export const apiSlice = createApi({
 
     viewLoggedinUserProfile: builder.query({
       query: () => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/profile`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/profile`,
         method: "GET",
       }),
       providesTags: ["UserProfile"],
@@ -361,7 +354,7 @@ export const apiSlice = createApi({
 
     editLoggedinUserProfile: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/edit-profile`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/edit-profile`,
         method: "PATCH",
         body: data,
       }),
@@ -370,7 +363,7 @@ export const apiSlice = createApi({
 
     applyLeave: builder.mutation({
       query: (leaveData) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/apply/leave`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/apply/leave`,
         method: "POST",
         body: leaveData,
       }),
@@ -379,7 +372,7 @@ export const apiSlice = createApi({
 
     forgotPassword: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/change-password`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/change-password`,
         method: "POST",
         body: data,
       }),
@@ -387,7 +380,7 @@ export const apiSlice = createApi({
 
     resetPassword: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/reset-password`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/reset-password`,
         method: "POST",
         body: data,
       }),
@@ -428,7 +421,7 @@ export const apiSlice = createApi({
 
     applyWorkFromHome: builder.mutation({
       query: (data) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/apply-work-from-home`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/apply-work-from-home`,
         method: "POST",
         body: data,
       }),
@@ -468,7 +461,7 @@ export const apiSlice = createApi({
 
     deleteUserDocument: builder.mutation({
       query: ({ userId, docUrl, type }) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/delete-document`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/user/delete-document`,
         method: "POST",
         body: { userId, docUrl, type },
       }),
@@ -485,7 +478,7 @@ export const apiSlice = createApi({
 
     updatePunchCorrectionStatus: builder.mutation({
       query: ({ requestId, status, adminComment }) => ({
-        url: `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/attendance/punch-correction/status`,
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/admin/attendance/punch-correction/status`,
         method: "POST",
         body: { requestId, status, adminComment },
       }),
@@ -526,7 +519,7 @@ export const apiSlice = createApi({
 
 export const {
   useLoginMutation,
-  useGetUsersQuery,
+  
   useGetAttendanceMutation,
   useGetLeaveMutation,
   useGetDashboardInfoQuery,

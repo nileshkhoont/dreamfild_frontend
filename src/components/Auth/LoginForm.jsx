@@ -120,24 +120,33 @@ function LoginForm() {
         deviceId: "F871D669-3D86-4D93-B883-9BFA87065A64",
       };
       const result = await loginMutation(payload).unwrap();
-      if (result.responseData?.authToken) {
-        authLogin(result);
-      }
+      // API returns: { statusCode, data: { userData }, message }
+      const token = result?.data?.userData?.token;
       if (
-        result?.responseMessage === "Invalid password. Please try again." ||
-        result?.responseMessage === "Invalid Credentials"
+        result?.statusCode === 200 &&
+        token &&
+        result?.message?.toLowerCase().includes("log in successfully")
       ) {
-        toast.error("Invalid email or password");
+        localStorage.setItem("jwt", token);
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("user", JSON.stringify(result.data.userData));
+        authLogin(result); // Pass full result to AuthContext for navigation
+      } else {
+        toast.error(result?.message || "Invalid email or password");
       }
     } catch (err) {
-      setErrorMessage(err.data?.responseMessage || "An unexpected error occurred");
+      // If error is an object with data, show message, else fallback
+      setErrorMessage(
+        err?.data?.message || err?.message || "An unexpected error occurred"
+      );
     }
-  };
+  }
 
   useEffect(() => {
     if (error) {
+      // If error is an object with data, show message, else fallback
       const errorMessage =
-        error?.data?.responseMessage || "An unexpected error occurred";
+        error?.data?.message || error?.message || "An unexpected error occurred";
       setErrorMessage(errorMessage);
     }
   }, [error]);
