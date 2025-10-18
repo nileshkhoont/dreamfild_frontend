@@ -30,10 +30,9 @@ export const AuthProvider = ({ children }) => {
     const checkAuthStatus = async () => {
       try {
         const token = localStorage.getItem("jwt");
-        const refreshToken = localStorage.getItem("refreshToken");
         const authState = localStorage.getItem("isAuthenticated");
 
-        if (!token || !refreshToken) return;
+        if (!token) return;
 
         setIsAuthenticated(authState === "true");
 
