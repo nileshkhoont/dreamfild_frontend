@@ -19,6 +19,7 @@ import DocumentList from "./components/Upload Documents/DcoumentList"; // <-- Im
 import { AuthImageProvider } from "./components/Auth/AuthImageProvider";
 import Dealer from "./components/Dealer/Dealer";
 import SocialMedia from "./components/SocialMedia/SocialMedia";
+import TallyOrders from "./components/TallyOrders/TallyOrders";
 
 const AppRoutes = () => {
   return (
@@ -58,6 +59,7 @@ const AppRoutes = () => {
               <Route path="/upload-documents" element={<DocumentList />} /> {/* <-- Use DocumentList here */}
               <Route path="/dealers" element={<Dealer />} />
               <Route path="/social-media" element={<SocialMedia />} />
+              <Route path="/tally-orders" element={<TallyOrders />} />
             </Route>
           </Route>
 

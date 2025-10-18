@@ -200,6 +200,14 @@ export const apiSlice = createApi({
       invalidatesTags: ["SocialMedia"],
     }),
 
+    getTallyOrders: builder.query({
+      query: ({ page = 1, limit = 10, event = "fetch_sales" }) => ({
+        url: `/tally/fetch-master-data?event=${event}&page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["TallyOrders"],
+    }),
+
 
     getAttendance: builder.mutation({
       query: (body) => ({
@@ -575,6 +583,7 @@ export const {
   useUpdateSocialMediaMutation,
   useDeleteSocialMediaMutation,
   useUpdateSocialMediaStatusMutation,
+  useGetTallyOrdersQuery,
   
   useGetAttendanceMutation,
   useGetLeaveMutation,

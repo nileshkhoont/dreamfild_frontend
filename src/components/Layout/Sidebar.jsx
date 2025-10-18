@@ -78,6 +78,12 @@ const menuItems = [
     activeIcon: BusinessIcon,
   },
   {
+    path: "/tally-orders",
+    label: "Tally Orders",
+    icon: BusinessOutlinedIcon,
+    activeIcon: BusinessIcon,
+  },
+  {
     path: "/social-media",
     label: "Social Media",
     icon: BusinessOutlinedIcon,
