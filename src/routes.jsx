@@ -18,6 +18,7 @@ import ViewProfile from "./components/Profile/ViewProfile";
 import DocumentList from "./components/Upload Documents/DcoumentList"; // <-- Import the DocumentList
 import { AuthImageProvider } from "./components/Auth/AuthImageProvider";
 import Dealer from "./components/Dealer/Dealer";
+import SocialMedia from "./components/SocialMedia/SocialMedia";
 
 const AppRoutes = () => {
   return (
@@ -56,6 +57,7 @@ const AppRoutes = () => {
               <Route path="/view-profile/:id" element={<ViewProfile />} />
               <Route path="/upload-documents" element={<DocumentList />} /> {/* <-- Use DocumentList here */}
               <Route path="/dealers" element={<Dealer />} />
+              <Route path="/social-media" element={<SocialMedia />} />
             </Route>
           </Route>
 

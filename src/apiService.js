@@ -157,6 +157,49 @@ export const apiSlice = createApi({
       providesTags: ["Dealers"],
     }),
 
+    getSocialMedia: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/social-media?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["SocialMedia"],
+    }),
+
+    addSocialMedia: builder.mutation({
+      query: (data) => ({
+        url: "/social-media",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["SocialMedia"],
+    }),
+
+    updateSocialMedia: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/social-media/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["SocialMedia"],
+    }),
+
+    deleteSocialMedia: builder.mutation({
+      query: (id) => ({
+        url: `/social-media/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SocialMedia"],
+    }),
+
+    updateSocialMediaStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/social-media/status/${id}`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: ["SocialMedia"],
+    }),
+
 
     getAttendance: builder.mutation({
       query: (body) => ({
@@ -527,6 +570,11 @@ export const apiSlice = createApi({
 export const {
   useLoginMutation,
   useGetDealersQuery,
+  useGetSocialMediaQuery,
+  useAddSocialMediaMutation,
+  useUpdateSocialMediaMutation,
+  useDeleteSocialMediaMutation,
+  useUpdateSocialMediaStatusMutation,
   
   useGetAttendanceMutation,
   useGetLeaveMutation,
