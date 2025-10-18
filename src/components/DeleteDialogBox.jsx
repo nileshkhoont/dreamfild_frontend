@@ -16,8 +16,6 @@ const DeleteDialogBox = ({
   message, // <-- Accept message prop
   confirmText, // <-- Accept confirmText prop
 }) => {
-  console.log("DeleteDialogBox name:", name); // <-- Log the name here
-
   React.useEffect(() => {
     if (deleteDialogOpen) {
       const timer = setTimeout(() => {

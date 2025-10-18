@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import CssBaseline from "@mui/material/CssBaseline";
-import DeleteDialogBox from "../DeleteDialogBox";
 import { Laptop } from "lucide-react";
 import List from "@mui/material/List";
 import { ChevronLeft } from "lucide-react";
@@ -1107,19 +1106,6 @@ const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
         </Alert>
       </Snackbar>
 
-      {/* Logout Confirmation Dialog - New addition */}
-      <DeleteDialogBox
-        deleteDialogOpen={logoutDialogOpen}
-        handleCancelDelete={() => setLogoutDialogOpen(false)}
-        handleConfirmDelete={async () => {
-          await handleLogout();
-          setLogoutDialogOpen(false);
-        }}
-        isDeleting={false}
-        name={loggedInUser?.name}
-        message="Are you sure you want to log out of your account?"
-        confirmText="Logout"
-      />
     </Box>
   );
 }

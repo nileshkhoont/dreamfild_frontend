@@ -34,15 +34,13 @@ import {
   CalendarHeart,
   Gift,
 } from "lucide-react";
+// Removed API hooks: useGetDashboardInfoQuery, usePendingWorkFromHomeQuery, useGetPendingPunchoutRequestsQuery
 import {
-  useGetDashboardInfoQuery,
   useUpdateLeaveStatusMutation,
   usePunchInMutation,
   usePunchOutMutation,
-  usePendingWorkFromHomeQuery,
   useUpdateWorkFromHomeStatusMutation,
-  useGetPendingPunchoutRequestsQuery,
-  useUpdatePunchCorrectionStatusMutation, // Updated name
+  useUpdatePunchCorrectionStatusMutation,
 } from "../apiService";
 import { CustomLoader, LoaderContainer } from "./Layout/CustomLoader";
 import { ConfirmationDialog } from "./Layout/ConfirmationDialog";
@@ -180,37 +178,63 @@ function Home() {
 
   const { triggerPunch, punchEvent } = useAuth();
 
-  const { data, isLoading, refetch } = useGetDashboardInfoQuery();
 
-  const organizationId = loggedInUser?.organization?._id;
+  // Dummy data for dashboard info
+  const dummyDashboardData = {
+    responseData: {
+      // For user role
+      todaysWorkingHours: "7:30",
+      monthlyWorkingHours: "120:00",
+      currentMonthLeaveDays: 2,
+      monthlyAttendance: [
+        { date: "2025-10-01", punchIn: "09:00", punchOut: "17:00", workingHours: "8:00", isWorkFromHome: false },
+        { date: "2025-10-02", punchIn: "09:15", punchOut: "17:10", workingHours: "7:55", isWorkFromHome: true },
+      ],
+      leaves: [
+        { leaveType: "Sick", startDate: "2025-10-05", endDate: "2025-10-05", status: "approved" },
+      ],
+      yearlyLeaves: [
+        { leaveType: "Casual", startDate: "2025-01-10", endDate: "2025-01-12", status: "approved", id: 1 },
+        { leaveType: "Sick", startDate: "2025-03-15", endDate: "2025-03-15", status: "rejected", id: 2 },
+      ],
+      // For admin role
+      punchIn: 12,
+      onLeave: 3,
+      notPunchIn: 2,
+      todaysAttendance: [
+        { name: "Alice", status: "Punch-In", time: "09:05", isWorkFromHome: false },
+        { name: "Bob", status: "Punch-Out", time: "17:00", isWorkFromHome: true },
+      ],
+      todaysLeaves: [
+        { name: "Charlie", halfDay: "Full-day", leaveType: "Sick" },
+      ],
+      upcomingLeaves: [
+        { name: "David", startDate: "2025-10-20", endDate: "2025-10-22", leaveType: "Casual" },
+      ],
+      pendingLeaves: [
+        { id: 101, name: "Eve", leaveType: "Casual", startDate: "2025-10-18", endDate: "2025-10-18", reason: "Family event", status: "pending" },
+      ],
+      userName: "John Doe",
+    },
+  };
 
-  const { data: pendingWfhData, isLoading: wfhLoading } =
-    usePendingWorkFromHomeQuery(organizationId, {
-      skip: role === "user",
-    });
+  // Dummy data for pending WFH requests
+  const dummyPendingWfhRequests = [
+    { _id: "wfh1", userName: "Frank", type: "wfh", date: "2025-10-17", reason: "Internet issue", status: "pending" },
+  ];
 
-  const {
-    data: pendingPunchoutData,
-    isLoading: punchoutLoading,
-    error: punchoutError,
-  } = useGetPendingPunchoutRequestsQuery(undefined, {
-    skip: role === "user",
-  });
+  // Dummy data for pending punchout correction requests
+  const dummyPendingPunchoutRequests = [
+    { id: "pc1", name: "Grace", type: "punchCorrection", correctionType: "punch-in", requestedTime: "09:30", reason: "Forgot to punch in", status: "pending", createdAt: "2025-10-18" },
+  ];
 
+  // Use dummy data instead of API
+  const data = dummyDashboardData;
+  const isLoading = false;
+  const refetch = () => {};
   const pendingLeaves = data?.responseData?.pendingLeaves || [];
-  const pendingWfhRequests = pendingWfhData?.data?.requests || [];
-  const pendingPunchoutRequests =
-    pendingPunchoutData?.responseData?.pendingRequests?.map((p) => ({
-      ...p,
-      type: "punchCorrection",
-      name: p.userId?.name || "User",
-      correctionType: p.correctionType, // 'punch-in' or 'punch-out'
-      requestedTime: p.requestedTime,
-      reason: p.reason,
-      status: p.status,
-      id: p._id,
-    })) || [];
-  // Merge all pending requests (leave, wfh, punchout)
+  const pendingWfhRequests = dummyPendingWfhRequests;
+  const pendingPunchoutRequests = dummyPendingPunchoutRequests;
   const allPendingRequests = [
     ...pendingLeaves.map((l) => ({ ...l, type: "leave" })),
     ...pendingWfhRequests.map((w) => ({ ...w, type: "wfh" })),
@@ -292,15 +316,11 @@ function Home() {
     onLeave: data?.responseData?.monthlyWorkingHours || "-",
     notCheckedIn: data?.responseData?.currentMonthLeaveDays ?? "-",
   };
-
-  // For admin, keep old stats
   const adminStats = {
     checkedIn: data?.responseData?.punchIn,
     onLeave: data?.responseData?.onLeave,
     notCheckedIn: data?.responseData?.notPunchIn,
   };
-
-  // Choose which stats to show
   const stats = role === "user" ? userStats : adminStats;
 
   const formatDate = (dateString) => {

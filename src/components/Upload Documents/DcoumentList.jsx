@@ -9,7 +9,7 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import Grid from "@mui/material/Grid";
 import CardActionArea from "@mui/material/CardActionArea";
 import Avatar from "@mui/material/Avatar";
-import DeleteDialogBox from "../DeleteDialogBox";
+// import DeleteDialogBox from "../DeleteDialogBox";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
@@ -374,13 +374,7 @@ const DocumentList = () => {
       />
       <PreviewImg previewOpen={previewOpen} setPreviewOpen={setPreviewOpen} previewSrc={previewSrc} />
 
-      <DeleteDialogBox
-        deleteDialogOpen={deleteDialogOpen}
-        handleCancelDelete={() => setDeleteDialogOpen(false)}
-        handleConfirmDelete={() => handleDeleteDocument(documentToDelete)}
-        isDeleting={isDeleting}
-        name={documentToDelete?.documentName}
-      />
+      {/* DeleteDialogBox removed. You may want to implement a different confirmation dialog here. */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}
