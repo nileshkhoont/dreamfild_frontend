@@ -70,42 +70,7 @@ const Dealer = () => {
 
   return (
     <Container>
-      <StatsGrid>
-        <StatCard>
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <IconWrapper sx={{ backgroundColor: "#e2dff7" }}>
-                <Users2 size={24} color="#8e83f2" />
-              </IconWrapper>
-              <Box>
-                <Typography variant="body2" sx={{ color: "var(--textColor)" }}>
-                  Total Dealers
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: "var(--textColor)" }}>
-                  {totalCount}
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </StatCard>
-        <StatCard>
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <IconWrapper sx={{ backgroundColor: "#e2f7e2" }}>
-                <Database size={24} color="#4caf50" />
-              </IconWrapper>
-              <Box>
-                <Typography variant="body2" sx={{ color: "var(--textColor)" }}>
-                  Active Dealers
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: "var(--textColor)" }}>
-                  {activeDealers.length}
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </StatCard>
-      </StatsGrid>
+
       <Card sx={{ borderRadius: 2, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)", color: "var(--textColor)", minHeight: "300px", display: "flex", flexDirection: "column" }}>
         <CardHeader title={<Typography variant="h5" sx={{ fontWeight: 600, color: "var(--textColor)", textAlign: "left", fontSize: "22px" }}>Dealer List</Typography>} />
         <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>

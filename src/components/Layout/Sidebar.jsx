@@ -72,16 +72,16 @@ const menuItems = [
     activeIcon: HomeIcon,
   },
   {
-    path: "/attendance",
-    label: "Attendance",
-    icon: FaListCheck,
-    activeIcon: FaListCheck,
-  },
-  {
     path: "/dealers",
     label: "Dealers",
     icon: BusinessOutlinedIcon,
     activeIcon: BusinessIcon,
+  },
+  {
+    path: "/attendance",
+    label: "Attendance",
+    icon: FaListCheck,
+    activeIcon: FaListCheck,
   },
   {
     path: "/reports",
@@ -364,7 +364,7 @@ const MenuItem = React.memo(
                 onClick={onClick}
                 collapsed={collapsed}
                 navigate={navigate}
-                // Do NOT pass openParent or setOpenParent to subItems
+              // Do NOT pass openParent or setOpenParent to subItems
               />
             ))}
           </Box>
@@ -395,7 +395,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
   });
   const [collapsed, setCollapsed] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-// const [openParent, setOpenParent] = useState(null);
+  // const [openParent, setOpenParent] = useState(null);
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -430,7 +430,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
       if (item.path === "/assign-assets") {
         return location.pathname === "/assets" || location.pathname === "/assign-assets";
       }
-      
+
       return item.subItems &&
         item.subItems.some((sub) => isActive(sub.path));
     },
@@ -547,17 +547,17 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
   }));
 
   // Update SideBySideActions styling to be responsive to collapsed state and button count
-const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
-  display: "flex",
-  flexDirection: collapsed ? "column" : "row", // Use column when collapsed, row otherwise
-  gap: theme.spacing(1),
-  marginBottom: theme.spacing(1.5),
-  justifyContent: collapsed ? "center" : "space-between", // Center items when in column
-  // When user role (2 buttons), make them take full width equally
-  "& > *": {
-    flex: isuser === "true" && !collapsed ? 1 : "0 0 30%", // Full width for 2 buttons, 30% for 3 buttons
-  },
-}));
+  const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
+    display: "flex",
+    flexDirection: collapsed ? "column" : "row", // Use column when collapsed, row otherwise
+    gap: theme.spacing(1),
+    marginBottom: theme.spacing(1.5),
+    justifyContent: collapsed ? "center" : "space-between", // Center items when in column
+    // When user role (2 buttons), make them take full width equally
+    "& > *": {
+      flex: isuser === "true" && !collapsed ? 1 : "0 0 30%", // Full width for 2 buttons, 30% for 3 buttons
+    },
+  }));
 
   const StyledBottomListItemButton = styled(ListItemButton)(({ theme }) => ({
     flex: 1,
@@ -825,7 +825,7 @@ const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
                     />
                   </Box>
                 ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                     <Typography
                       variant="h6"
                       sx={{
@@ -863,15 +863,15 @@ const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
               transform: isMobile
                 ? "none"
                 : collapsed
-                ? "rotate(180deg)"
-                : "rotate(0deg)",
+                  ? "rotate(180deg)"
+                  : "rotate(0deg)",
             }}
             aria-label={
               isMobile
                 ? "close menu"
                 : collapsed
-                ? "expand menu"
-                : "collapse menu"
+                  ? "expand menu"
+                  : "collapse menu"
             }
           >
             {isMobile ? (
@@ -891,18 +891,18 @@ const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
           {loading
             ? renderSkeletons
             : filteredMenuItems.map((item) => (
-                <MenuItem
-                  key={item.path}
-                  item={item}
-                  isActive={isActive}
-                  isParentActive={isParentActive(item)}
-                  onClick={handleMenuItemClick}
-                  collapsed={collapsed}
-                  navigate={navigate}
-                  openParent={openParent}
-                  setOpenParent={setOpenParent}
-                />
-              ))}
+              <MenuItem
+                key={item.path}
+                item={item}
+                isActive={isActive}
+                isParentActive={isParentActive(item)}
+                onClick={handleMenuItemClick}
+                collapsed={collapsed}
+                navigate={navigate}
+                openParent={openParent}
+                setOpenParent={setOpenParent}
+              />
+            ))}
         </List>
       </Box>
 
