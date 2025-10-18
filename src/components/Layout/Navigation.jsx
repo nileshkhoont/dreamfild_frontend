@@ -1187,26 +1187,7 @@ const Navigation = () => {
                     </button>
                   )}
 
-                  <StyledIconWrapper onClick={handleNotifOpen} sx={{ ml: 1 }}>
-                    <Badge
-                      badgeContent={unreadCount > 0 ? unreadCount : null}
-                      color="default"
-                      sx={{
-                        "& .MuiBadge-badge": {
-                          backgroundColor: "#2b2b2b",
-                          color: "#fff",
-                          fontSize: "0.7rem",
-                          fontWeight: 500,
-                          minWidth: 18,
-                          height: 18,
-                        },
-                      }}
-                      overlap="circular"
-                      anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                    >
-                      <IoIosNotificationsOutline size={22} color="#1f1f1f" />
-                    </Badge>
-                  </StyledIconWrapper>
+
 
                   <StyledAvatar
                     onClick={handleMenuOpen}
@@ -1380,106 +1361,7 @@ const Navigation = () => {
         </Alert>
       </Snackbar>
 
-      {/* Notifications Menu */}
-      <Menu
-        anchorEl={notifAnchorEl}
-        open={isNotifOpen}
-        onClose={handleNotifClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{
-          sx: {
-            minWidth: 320,
-            borderRadius: 3,
-            boxShadow: "0 8px 32px rgba(60, 72, 100, 0.10)",
-            p: 0,
-            mt: 1,
-            background: "#fff",
-          },
-        }}
-      >
-        <Box sx={{ p: 2, pb: 1 }}>
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-            Recent Notifications
-          </Typography>
-          {notificationsData && notificationsData.length > 0 ? (
-            notificationsData.slice(0, 5).map((notif, idx) => (
-              <Box
-                key={notif._id || idx}
-                sx={{
-                  mb: 1,
-                  p: 1.2,
-                  borderRadius: 2,
-                  background: "#f7f7f7", // Monochrome background for all
-                  color: "#333", // Monochrome text for all
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                  "&:hover": {
-                    background: "#ededed",
-                  },
-                }}
-                onClick={() => {
-                  handleNotifClose();
-                  navigate("/notifications");
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>
-                  {notif.message || notif.title || "Leave notification"}
-                </span>
-                <Typography
-                  variant="caption"
-                  sx={{ display: "block", color: "#888", mt: 0.5 }}
-                >
-                  {notif.createdAt
-                    ? (() => {
-                        const d = new Date(notif.createdAt);
-                        const day = String(d.getDate()).padStart(2, "0");
-                        const month = String(d.getMonth() + 1).padStart(2, "0");
-                        const year = d.getFullYear();
-                        let hours = d.getHours();
-                        const minutes = String(d.getMinutes()).padStart(2, "0");
-                        const ampm = hours >= 12 ? "PM" : "AM";
-                        hours = hours % 12;
-                        hours = hours ? hours : 12;
-                        return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
-                      })()
-                    : ""}
-                </Typography>
-              </Box>
-            ))
-          ) : (
-            <Typography variant="body2" sx={{ color: "#888", py: 2 }}>
-              No notifications found.
-            </Typography>
-          )}
-        </Box>
 
-        <Divider />
-
-        <Box sx={{ p: 1.5, pt: 1, textAlign: "center" }}>
-          <Button
-            variant="text"
-            size="small"
-            sx={{
-              fontWeight: 600,
-              color: "var(--purpleShadeBg)",
-              borderRadius: 2,
-              textTransform: "none",
-              "&:hover": {
-                background: "rgba(114, 103, 240, 0.08)",
-              },
-            }}
-            onClick={() => {
-              handleNotifClose();
-              navigate("/notifications");
-            }}
-          >
-            View All
-          </Button>
-        </Box>
-      </Menu>
 
       {/* Confirmation Dialog */}
       <Dialog

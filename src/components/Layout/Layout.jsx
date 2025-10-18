@@ -2,37 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  alpha,
-  IconButton,
-  Button,
-  Avatar,
-  ListItemAvatar,
-  Drawer,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Outlet, useNavigate, useLocation  } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
-// ...existing code...
-import { useEmployee } from "../../utils/EmployeeContext";
-import { Skeleton } from "@mui/material";
-import { PersonOffOutlined } from "@mui/icons-material";
-import { TextField, InputAdornment } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import GroupIcon from "@mui/icons-material/Group";
-import CloseIcon from "@mui/icons-material/Close";
-
 
 const Layout = () => {
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-   const [sidebarOpenParent, setSidebarOpenParent] = useState(null);
+  const [sidebarOpenParent, setSidebarOpenParent] = useState(null);
   const [employeeDrawerOpen, setEmployeeDrawerOpen] = useState(false);
 
   const theme = useTheme();
@@ -97,42 +75,6 @@ const Layout = () => {
           </Box>
         </Container>
       </Box>
-
-      {/* Employee Button for toggling the drawer */}
-      {shouldShowEmployeeList && (
-        <Box
-          onClick={handleEmployeeDrawerToggle}
-          sx={{
-            display: employeeDrawerOpen ? 'none' : 'flex', // Hide when drawer is open
-            justifyContent: "center",
-            alignItems: "center",
-            position: "fixed",
-            bottom: 100,
-            right: 2,
-            zIndex: employeeDrawerOpen ? -1 : 1300, // Lower z-index when drawer is open
-            width: 56,
-            height: 56,
-            backgroundColor: "white",
-            borderRadius: "50%",
-            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.2)",
-            cursor: "pointer", // Add cursor pointer for better UX
-            transition: 'opacity 0.3s ease', // Smooth transition
-            opacity: employeeDrawerOpen ? 0 : 1, // Fade out when drawer is open
-          }}
-        >
-          <IconButton
-            sx={{
-              color: "#0046f6",
-              padding: 0,
-              "&:hover": {
-                backgroundColor: "rgba(0, 70, 246, 0.1)",
-              },
-            }}
-          >
-            <GroupIcon />
-          </IconButton>
-        </Box>
-      )}
     </Box>
   );
 };

@@ -73,65 +73,16 @@ const menuItems = [
     activeIcon: HomeIcon,
   },
   {
+    path: "/attendance",
     label: "Attendance",
-    icon: CalendarMonthOutlinedIcon,
-    activeIcon: CalendarMonthIcon,
-    subItems: [
-      {
-        label: "Attendance Logs",
-        path: "/attendance",
-        icon: FaListCheck,
-        activeIcon: FaListCheck,
-      },
-      {
-        label: "Remote Work",
-        path: "/work-from-home",
-        icon: Laptop,
-        activeIcon: Laptop,
-      }
-    ]
-  },
-  {
-    path: "/leave",
-    label: "Leave", 
-    icon: EventBusyOutlinedIcon,
-    activeIcon: EventBusyIcon,
+    icon: FaListCheck,
+    activeIcon: FaListCheck,
   },
   {
     path: "/reports",
     label: "Reports",
     icon: BarChartOutlinedIcon,
     activeIcon: BarChartIcon,
-  },
-  {
-    path: "/message",
-    label: "Message",
-    icon: ChatOutlinedIcon,
-    activeIcon: ChatIcon,
-  },
-  {
-    path: "/user-list",
-    label: "Users",
-    icon: PersonOutlineOutlinedIcon,
-    activeIcon: PersonIcon,
-  },
-  {
-    path: "/task-list",
-    label: "Tasks",
-    icon: AssignmentOutlinedIcon,
-    activeIcon: AssignmentIcon,
-  },
-  {
-    path: "/upload-documents",
-    label: "Upload Document",
-    icon: DescriptionOutlinedIcon,
-    activeIcon: DescriptionIcon,
-  },
-  {
-    path: "/assign-assets", // Changed: Direct path instead of subItems
-    label: "Assets",
-    icon: MdInventory2,
-    activeIcon: MdInventory2,
   },
   {
     path: "/organization",
@@ -538,22 +489,8 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
           item.label === "Users" ||
           item.label === "Dashboard" ||
           item.label === "Attendance" ||
-          item.label === "Leave" ||
-          item.label === "Reports" ||
-          item.label === "Remote Work" ||
-          item.label === "Assets"
+          item.label === "Reports"
       );
-      // No need to filter subItems since Assets no longer has subItems
-      
-      // Add "View Task" only for user role if needed
-      if (!roleBasedItems.some((item) => item.label === "View Task")) {
-        roleBasedItems.push({
-          path: "/view-task",
-          label: "View Task",
-          icon: AssignmentOutlinedIcon,
-          activeIcon: AssignmentIcon,
-        });
-      }
     } else if (loggedInUser?.role === "super-admin") {
       // Only show Organization and Org User List menu for super-admin
       roleBasedItems = menuItems.filter(
@@ -566,8 +503,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
         (item) =>
           item.label !== "Organization" &&
           item.label !== "Notification" &&
-          item.label !== "Org User List" &&
-          item.label !== "Upload Document" // Remove "Upload Document" from main menu
+          item.label !== "Org User List"
       );
     }
 
@@ -983,30 +919,6 @@ const SideBySideActions = styled(Box)(({ theme, collapsed, isuser }) => ({
                 <StyledListItemIcon sx={{ justifyContent: "center", minWidth: 0 }}>
                   <FaRegUserCircle size={22} />
                 </StyledListItemIcon>
-              </StyledBottomListItemButton>
-            </Tooltip>
-          )}
-
-          {/* Document Button - Show for all users */}
-          {loading ? (
-            <Skeleton
-              variant="rectangular"
-              width={loggedInUser?.role === "user" ? "50%" : "30%"}
-              height={44}
-              sx={{ borderRadius: 2 }}
-            />
-          ) : (
-            <Tooltip title={loggedInUser?.role === "user" ? "Document" : "Upload"} placement="top" arrow>
-              <StyledBottomListItemButton
-                onClick={() => navigate("/upload-documents")}
-              >
-                <StyledBottomListItemIcon sx={{ justifyContent: "center", minWidth: 0 }}>
-                  {loggedInUser?.role === "user" ? (
-                    <IoDocumentAttachSharp size={22} />
-                  ) : (
-                    <IoCloudUploadOutline size={22} />
-                  )}
-                </StyledBottomListItemIcon>
               </StyledBottomListItemButton>
             </Tooltip>
           )}
