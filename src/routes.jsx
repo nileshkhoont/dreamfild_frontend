@@ -22,6 +22,8 @@ import SocialMedia from "./components/SocialMedia/SocialMedia";
 import TallyOrders from "./components/TallyOrders/TallyOrders";
 import Bank from "./components/Bank/Bank";
 import MediaList from "./components/Media/MediaList"; // <-- Add this import
+import TallyProductList from "./components/TallyProduct/TallyProductList"; // <-- Add this import
+import TallyProductVariants from "./components/TallyProduct/TallyProductVariants";
 
 const AppRoutes = () => {
   return (
@@ -64,6 +66,8 @@ const AppRoutes = () => {
               <Route path="/tally-orders" element={<TallyOrders />} />
               <Route path="/banks" element={<Bank />} />
               <Route path="/media" element={<MediaList />} /> {/* <-- Add this line */}
+              <Route path="/tally-products" element={<TallyProductList />} /> {/* <-- Add this line */}
+<Route path="/tally-products/:id" element={<TallyProductVariants />} /> {/* <-- Add this line */}
             </Route>
           </Route>
 

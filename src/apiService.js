@@ -648,6 +648,77 @@ export const apiSlice = createApi({
       invalidatesTags: ["Media"],
     }),
     // --- MEDIA MODULE END ---
+
+    getTallyProducts: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/tally-products?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["TallyProducts"],
+    }),
+    updateTallyProduct: builder.mutation({
+      query: ({ id, productSpecification }) => ({
+        url: `/tally-products/${id}`,
+        method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: { productSpecification },
+      }),
+      invalidatesTags: ["TallyProducts"],
+    }),
+
+    // Product Review APIs
+    getProductReviews: builder.query({
+      query: (productId) => ({
+        url: `/product-review/get-by-product/${productId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, productId) => [
+        { type: "ProductReviews", id: productId },
+        "ProductReviews",
+      ],
+    }),
+
+    addProductReview: builder.mutation({
+      query: ({ productId, rating, comment }) => ({
+        url: "/product-review",
+        method: "POST",
+        body: { productId, rating, comment },
+      }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: "ProductReviews", id: productId },
+        "ProductReviews",
+      ],
+    }),
+
+    updateProductReview: builder.mutation({
+      query: ({ id, rating, comment, productId }) => ({
+        url: `/product-review/${id}`,
+        method: "PUT",
+        body: { rating, comment, productId },
+      }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: "ProductReviews", id: productId },
+        "ProductReviews",
+      ],
+    }),
+
+    deleteProductReview: builder.mutation({
+      query: (id) => ({
+        url: `/product-review/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ProductReviews"],
+    }),
+
+    getAllProductReviews: builder.query({
+      query: () => ({
+        url: "/product-review",
+        method: "GET",
+      }),
+      providesTags: ["ProductReviews"],
+    }),
   }),
 });
 
@@ -720,4 +791,13 @@ export const {
   useUpdateMediaStatusMutation,
   useUploadMediaMutation,
 
+  useGetTallyProductsQuery,
+  useUpdateTallyProductMutation,
+
+  // Product Review hooks
+  useGetProductReviewsQuery,
+  useAddProductReviewMutation,
+  useUpdateProductReviewMutation,
+  useDeleteProductReviewMutation,
+  useGetAllProductReviewsQuery,
 } = apiSlice;

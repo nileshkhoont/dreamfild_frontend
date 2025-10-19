@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -26,29 +26,31 @@ import {
   MenuItem,
   IconButton,
   Switch,
+  Chip,
+  Tooltip,
+  Snackbar,
+  Alert,
+  InputAdornment,
 } from "@mui/material";
+import { Plus, Edit2, Trash2, User, Users } from "lucide-react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   useGetDealersQuery,
   useRegisterDealerMutation,
   useUpdateDealerStatusMutation,
   useAddDealerUserMutation,
 } from "../../apiService";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const Container = styled(Box)({
   margin: "0 auto",
   paddingTop: "2rem",
-  height: "88vh", // Make the container take full viewport height
-  display: "flex",
-  flexDirection: "column",
+  overflow: "hidden",
 });
+
 const StyledTableContainer = styled(TableContainer)({
   borderRadius: 16,
   border: "none",
-  maxHeight: "65vh", // Set a max height for the table area
-  overflow: "auto", // Enable scrolling for the table area
   "& .MuiTableCell-head": {
     backgroundColor: "var(--tableHeaderBackgroundColor)",
     fontWeight: 600,
@@ -56,23 +58,14 @@ const StyledTableContainer = styled(TableContainer)({
     borderBottom: "none",
     position: "sticky",
     top: 0,
-    zIndex: 2,
+    zIndex: 0,
   },
   "& .MuiTableCell-root": { borderBottom: "none", borderRight: "none" },
   "& .MuiTableRow-root:hover": {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "var(--hoverBackgroundColor)",
     transition: "background-color 0.3s ease",
   },
 });
-
-const StyledMenu = styled(Menu)(({ theme }) => ({
-  "& .MuiPaper-root": {
-    borderRadius: 12,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-    minWidth: 180,
-    padding: theme.spacing(1),
-  },
-}));
 
 const Dealer = () => {
   const [page, setPage] = useState(0);
@@ -93,30 +86,27 @@ const Dealer = () => {
   });
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedDealerId, setSelectedDealerId] = useState(null);
-  const [statusLoading, setStatusLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
-  // Refetch dealers after status change or user add
   const { data, isLoading, refetch } = useGetDealersQuery({ page: page + 1, limit: rowsPerPage });
   const [registerDealer, { isLoading: isSubmitting }] = useRegisterDealerMutation();
-  const [updateDealerStatus, { isLoading: isStatusUpdating }] = useUpdateDealerStatusMutation();
+  const [updateDealerStatus] = useUpdateDealerStatusMutation();
   const [addDealerUser, { isLoading: isUserAdding }] = useAddDealerUserMutation();
 
   const dealers = data?.data || [];
   const totalCount = data?.totalCount || 0;
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-  };
-
+  const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setFormData({ displayName: "", email: "", number: "", role: "" });
@@ -132,32 +122,22 @@ const Dealer = () => {
     setAddUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const getErrorMessage = (error) => {
-    // Handles both array and string messages
-    if (error?.data?.message) {
-      if (Array.isArray(error.data.message)) {
-        return error.data.message.join(", ");
-      }
-      return error.data.message;
-    }
-    return "An error occurred";
-  };
-
   const handleSubmit = async () => {
     try {
-      const payload = {
-        displayName: formData.displayName,
-        email: formData.email,
-        number: formData.number,
-        role: formData.role,
-      };
-
-      await registerDealer(payload).unwrap();
-      toast.success("Dealer added successfully!");
+      await registerDealer(formData).unwrap();
+      setSnackbar({
+        open: true,
+        message: "Dealer added successfully!",
+        severity: "success",
+      });
       handleCloseDialog();
+      refetch();
     } catch (error) {
-      toast.error(getErrorMessage(error));
-      console.error("Error adding dealer:", error);
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to add dealer",
+        severity: "error",
+      });
     }
   };
 
@@ -171,18 +151,23 @@ const Dealer = () => {
     setSelectedDealerId(null);
   };
 
-  // Update status API call (now using RTK Query)
-  const handleStatusChange = async (dealerId, newStatus) => {
-    setStatusLoading(true);
+  const handleStatusToggle = async (dealer) => {
+    const newStatus = dealer.status === "active" ? "deactive" : "active";
     try {
-      await updateDealerStatus({ id: dealerId, status: newStatus }).unwrap();
-        toast.success("Status changed successfully!");
+      await updateDealerStatus({ id: dealer.id, status: newStatus }).unwrap();
+      setSnackbar({
+        open: true,
+        message: `Status updated to ${newStatus}`,
+        severity: "success",
+      });
       refetch();
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to update status",
+        severity: "error",
+      });
     }
-    setStatusLoading(false);
-    handleCloseMenu();
   };
 
   const handleOpenAddUserDialog = () => {
@@ -195,16 +180,27 @@ const Dealer = () => {
     setAddUserFormData({ displayName: "", email: "", number: "", password: "" });
   };
 
-  // Add user API call (now using RTK Query)
   const handleAddUserSubmit = async () => {
     try {
       await addDealerUser(addUserFormData).unwrap();
-      toast.success("User added successfully!");
+      setSnackbar({
+        open: true,
+        message: "User added successfully!",
+        severity: "success",
+      });
       handleCloseAddUserDialog();
       refetch();
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to add user",
+        severity: "error",
+      });
     }
+  };
+
+  const getStatusColor = (status) => {
+    return status?.toLowerCase() === "active" ? "success" : "default";
   };
 
   return (
@@ -213,7 +209,7 @@ const Dealer = () => {
         sx={{
           borderRadius: 2,
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-          color: "#000",
+          color: "var(--textColor)",
           minHeight: "300px",
           display: "flex",
           flexDirection: "column",
@@ -221,37 +217,93 @@ const Dealer = () => {
       >
         <CardHeader
           title={
-            <Typography
-              variant="h5"
+            <Box
               sx={{
-                fontWeight: 600,
-                color: "#000",
-                textAlign: "left",
-                fontSize: "22px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                width: "100%",
               }}
             >
-              Dealer List
-            </Typography>
-          }
-          action={
-            <Button
-              variant="contained"
-              sx={{
-                backgroundColor: "#000",
-                color: "#fff",
-                borderRadius: 2,
-                textTransform: "none",
-              }}
-              onClick={handleOpenDialog}
-            >
-              Add Dealer
-            </Button>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Users size={22} color="var(--textColor)" />
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      color: "var(--textColor)",
+                      textAlign: "left",
+                      fontSize: "22px",
+                    }}
+                    component="span"
+                  >
+                    Dealer List
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<Plus size={18} />}
+                  sx={{
+                    backgroundColor: "var(--purpleShadeBg)",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    textTransform: "none",
+                    px: 2,
+                    py: 1,
+                    height: "40px",
+                    minWidth: "120px",
+                    boxShadow: "none",
+                    "&:hover": {
+                      boxShadow: "none",
+                    },
+                  }}
+                  onClick={handleOpenDialog}
+                >
+                  Add Dealer
+                </Button>
+              </Box>
+            </Box>
           }
         />
         <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
           {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+              }}
+            >
               <CircularProgress />
+            </Box>
+          ) : dealers.length === 0 ? (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+                gap: 2,
+              }}
+            >
+              <Users size={48} color="#ccc" />
+              <Typography variant="body1" sx={{ color: "#666" }}>
+                No dealers found
+              </Typography>
             </Box>
           ) : (
             <>
@@ -259,80 +311,80 @@ const Dealer = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell>ID</TableCell>
                       <TableCell>Name</TableCell>
                       <TableCell>Email</TableCell>
                       <TableCell>Number</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>GST Number</TableCell>
                       <TableCell>Created At</TableCell>
-                      <TableCell>Action</TableCell>
+                      <TableCell align="center">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {dealers.map((dealer) => (
                       <TableRow key={dealer.id}>
-                        <TableCell>{dealer.displayName}</TableCell>
+                        <TableCell>{dealer.id}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{dealer.displayName}</TableCell>
                         <TableCell>{dealer.email}</TableCell>
                         <TableCell>{dealer.number}</TableCell>
-                        <TableCell>{dealer.status}</TableCell>
-                        <TableCell>{dealer.gstNumber || "-"}</TableCell>
-                        <TableCell>{dealer.createdAt ? new Date(dealer.createdAt).toLocaleDateString() : "-"}</TableCell>
                         <TableCell>
-                          <IconButton onClick={(event) => handleOpenMenu(event, dealer.id)}>
-                            <MoreVertIcon />
-                          </IconButton>
-                          <StyledMenu
-                            anchorEl={anchorEl}
-                            open={Boolean(anchorEl) && selectedDealerId === dealer.id}
-                            onClose={handleCloseMenu}
-                            elevation={3}
-                            anchorOrigin={{
-                              vertical: "bottom",
-                              horizontal: "right",
-                            }}
-                            transformOrigin={{
-                              vertical: "top",
-                              horizontal: "right",
-                            }}
-                          >
-                            <MenuItem
-                              onClick={() =>
-                                handleStatusChange(
-                                  dealer.id,
-                                  dealer.status === "active" ? "deactive" : "active"
-                                )
-                              }
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Chip
+                              label={dealer.status}
+                              color={getStatusColor(dealer.status)}
+                              size="small"
                               sx={{
-                                borderRadius: 2,
+                                textTransform: "capitalize",
                                 fontWeight: 500,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
+                                borderRadius: "8px",
                               }}
-                              disabled={statusLoading}
+                            />
+                            <Tooltip
+                              title={`Toggle to ${
+                                dealer.status === "active" ? "deactive" : "active"
+                              }`}
                             >
                               <Switch
                                 checked={dealer.status === "active"}
-                                color="success"
+                                onChange={() => handleStatusToggle(dealer)}
                                 size="small"
-                                sx={{ mr: 1 }}
-                                inputProps={{ "aria-label": "status switch" }}
-                                disabled={statusLoading}
+                                sx={{
+                                  "& .MuiSwitch-switchBase.Mui-checked": {
+                                    color: "var(--purpleShadeBg)",
+                                  },
+                                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                    {
+                                      backgroundColor: "var(--purpleShadeBg)",
+                                    },
+                                }}
                               />
-                              {dealer.status === "active" ? "Make Deactive" : "Make Active"}
-                            </MenuItem>
-                            <MenuItem
-                              onClick={handleOpenAddUserDialog}
-                              sx={{
-                                mt: 1,
-                                borderRadius: 2,
-                                fontWeight: 500,
-                                "&:hover": { background: "#f0f0f0" },
-                              }}
-                            >
-                              Add User
-                            </MenuItem>
-                          </StyledMenu>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{dealer.gstNumber || "-"}</TableCell>
+                        <TableCell>
+                          {dealer.createdAt
+                            ? new Date(dealer.createdAt).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                            <Tooltip title="Add User">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenAddUserDialog()}
+                                sx={{
+                                  color: "var(--purpleShadeBg)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(80, 60, 180, 0.1)",
+                                  },
+                                }}
+                              >
+                                <User size={18} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -346,7 +398,7 @@ const Dealer = () => {
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 50]}
+                rowsPerPageOptions={[5, 10, 25, 50]}
               />
             </>
           )}
@@ -357,81 +409,202 @@ const Dealer = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
+        maxWidth="sm"
         fullWidth
-        maxWidth="md"
-        sx={{
-          "& .MuiPaper-root": {
-            borderRadius: "16px",
+        PaperProps={{
+          sx: {
+            minHeight: 380,
+            minWidth: 380,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
+            background: "#fff",
           },
         }}
       >
-        <DialogTitle sx={{ backgroundColor: "#000", color: "#fff" }}>Add Dealer</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ marginTop: 2 }}>
-            <Grid item xs={6}>
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            fontSize: 22,
+            color: "var(--purpleShadeBg)",
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.2,
+          }}
+        >
+          <Users size={22} />
+          Add Dealer
+          <IconButton
+            onClick={handleCloseDialog}
+            size="small"
+            sx={{ ml: "auto", color: "inherit" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            mt: 3,
+            px: 3,
+            py: 2,
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: 3,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Name
+              </Typography>
               <TextField
-                label="Name"
                 name="displayName"
                 value={formData.displayName}
                 onChange={handleInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter dealer name"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <User size={18} color="#888" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Email
+              </Typography>
               <TextField
-                label="Email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter email"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Number
+              </Typography>
               <TextField
-                label="Number"
                 name="number"
                 value={formData.number}
                 onChange={handleInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter phone number"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                fullWidth
-              />
-            </Grid>
+            
           </Grid>
         </DialogContent>
-        <DialogActions
-          sx={{
-            backgroundColor: "#f5f5f5",
-            justifyContent: "center",
-            gap: 2,
-          }}
-        >
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            sx={{
-              backgroundColor: "#000",
-              color: "#fff",
-            }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: "#000",
-              border: "1px solid #000",
+              fontWeight: 600,
+              fontSize: 15,
+              borderRadius: "12px",
+              textTransform: "none",
+              color: "var(--textColor)",
+              border: "1px solid var(--textFieldBorderColor, #ced4da)",
+              padding: "8px 20px",
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
             }}
           >
             Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            sx={{
+              backgroundColor: "var(--purpleShadeBg)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 24px",
+              fontWeight: 600,
+              fontSize: 15,
+              textTransform: "none",
+              whiteSpace: "nowrap",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "var(--purpleShadeBg)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              },
+            }}
+          >
+            {isSubmitting ? (
+              <CircularProgress size={22} sx={{ color: "#fff" }} />
+            ) : (
+              "Add Dealer"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -440,84 +613,221 @@ const Dealer = () => {
       <Dialog
         open={openAddUserDialog}
         onClose={handleCloseAddUserDialog}
-        fullWidth
         maxWidth="sm"
-        sx={{
-          "& .MuiPaper-root": {
-            borderRadius: "16px",
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: 380,
+            minWidth: 380,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
+            background: "#fff",
           },
         }}
       >
-        <DialogTitle sx={{ backgroundColor: "#000", color: "#fff" }}>Add User</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ marginTop: 2 }}>
-            <Grid item xs={6}>
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            fontSize: 22,
+            color: "var(--purpleShadeBg)",
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.2,
+          }}
+        >
+          <User size={22} />
+          Add User
+          <IconButton
+            onClick={handleCloseAddUserDialog}
+            size="small"
+            sx={{ ml: "auto", color: "inherit" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            mt: 3,
+            px: 3,
+            py: 2,
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: 3,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Name
+              </Typography>
               <TextField
-                label="Name"
                 name="displayName"
                 value={addUserFormData.displayName}
                 onChange={handleAddUserInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter user name"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <User size={18} color="#888" />
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Email
+              </Typography>
               <TextField
-                label="Email"
                 name="email"
                 value={addUserFormData.email}
                 onChange={handleAddUserInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter email"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Number
+              </Typography>
               <TextField
-                label="Number"
                 name="number"
                 value={addUserFormData.number}
                 onChange={handleAddUserInputChange}
                 fullWidth
+                size="small"
+                variant="outlined"
+                placeholder="Enter phone number"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "12px",
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Password"
-                name="password"
-                value={addUserFormData.password}
-                onChange={handleAddUserInputChange}
-                fullWidth
-              />
-            </Grid>
+            
           </Grid>
         </DialogContent>
-        <DialogActions
-          sx={{
-            backgroundColor: "#f5f5f5",
-            justifyContent: "center",
-            gap: 2,
-          }}
-        >
-          <Button
-            onClick={handleAddUserSubmit}
-            variant="contained"
-            sx={{
-              backgroundColor: "#000",
-              color: "#fff",
-            }}
-          >
-            Submit
-          </Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
             onClick={handleCloseAddUserDialog}
             sx={{
-              color: "#000",
-              border: "1px solid #000",
+              fontWeight: 600,
+              fontSize: 15,
+              borderRadius: "12px",
+              textTransform: "none",
+              color: "var(--textColor)",
+              border: "1px solid var(--textFieldBorderColor, #ced4da)",
+              padding: "8px 20px",
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
             }}
           >
             Cancel
           </Button>
+          <Button
+            onClick={handleAddUserSubmit}
+            disabled={isUserAdding}
+            sx={{
+              backgroundColor: "var(--purpleShadeBg)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 24px",
+              fontWeight: 600,
+              fontSize: 15,
+              textTransform: "none",
+              whiteSpace: "nowrap",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "var(--purpleShadeBg)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              },
+            }}
+          >
+            {isUserAdding ? (
+              <CircularProgress size={22} sx={{ color: "#fff" }} />
+            ) : (
+              "Add User"
+            )}
+          </Button>
         </DialogActions>
       </Dialog>
-      <ToastContainer position="top-right" autoClose={3000} />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

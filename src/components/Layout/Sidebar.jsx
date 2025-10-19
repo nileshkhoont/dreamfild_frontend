@@ -63,56 +63,77 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { IoCloudUploadOutline, IoDocumentAttachSharp } from "react-icons/io5";
 
-// 1. First, update the menuItems array structure:
+// Import additional icons
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import GroupIcon from "@mui/icons-material/Group";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import InventoryOutlinedIcon from "@mui/icons-material/InventoryOutlined";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
+import ShareIcon from "@mui/icons-material/Share";
+import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+
+// 1. Update the menuItems array with different icons:
 const menuItems = [
   {
     label: "Dashboard",
     path: "/dashboard",
-    icon: HomeOutlinedIcon,
-    activeIcon: HomeIcon,
+    icon: DashboardOutlinedIcon,
+    activeIcon: DashboardIcon,
   },
   {
     path: "/dealers",
     label: "Dealers",
-    icon: BusinessOutlinedIcon,
-    activeIcon: BusinessIcon,
+    icon: GroupOutlinedIcon,
+    activeIcon: GroupIcon,
   },
   {
     path: "/media",
     label: "Media",
-    icon: IoCloudUploadOutline, // Use a relevant icon, imported above
-    activeIcon: IoDocumentAttachSharp, // Use a filled/active icon
+    icon: CloudUploadOutlinedIcon,
+    activeIcon: CloudUploadOutlinedIcon, // Same icon for both states
   },
   {
     path: "/tally-orders",
     label: "Tally Orders",
-    icon: BusinessOutlinedIcon,
-    activeIcon: BusinessIcon,
+    icon: ShoppingCartOutlinedIcon,
+    activeIcon: ShoppingCartIcon,
+  },
+  {
+    path: "/tally-products",
+    label: "Tally Products",
+    icon: InventoryOutlinedIcon,
+    activeIcon: InventoryIcon,
   },
   {
     path: "/social-media",
     label: "Social Media",
-    icon: BusinessOutlinedIcon,
-    activeIcon: BusinessIcon,
+    icon: ShareOutlinedIcon,
+    activeIcon: ShareIcon,
   },
   {
     path: "/banks",
     label: "Banks",
-    icon: BusinessOutlinedIcon,
-    activeIcon: BusinessIcon,
+    icon: AccountBalanceOutlinedIcon,
+    activeIcon: AccountBalanceIcon,
   },
-  {
-    path: "/attendance",
-    label: "Attendance",
-    icon: FaListCheck,
-    activeIcon: FaListCheck,
-  },
-  {
-    path: "/reports",
-    label: "Reports",
-    icon: BarChartOutlinedIcon,
-    activeIcon: BarChartIcon,
-  },
+  // {
+  //   path: "/attendance",
+  //   label: "Attendance",
+  //   icon: FaListCheck,
+  //   activeIcon: FaListCheck,
+  // },
+  // {
+  //   path: "/reports",
+  //   label: "Reports",
+  //   icon: BarChartOutlinedIcon,
+  //   activeIcon: BarChartIcon,
+  // },
   {
     path: "/organization",
     label: "Organization",

@@ -18,26 +18,23 @@ import {
   Button,
   IconButton,
   Switch,
-  Menu,
-  MenuItem,
+  Chip,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Plus, Upload, File } from "lucide-react";
 import { useGetMediaQuery, useUpdateMediaStatusMutation, useUploadMediaMutation } from "../../apiService";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const Container = styled(Box)({
   margin: "0 auto",
   paddingTop: "2rem",
-  height: "88vh",
-  display: "flex",
-  flexDirection: "column",
+  overflow: "hidden",
 });
+
 const StyledTableContainer = styled(TableContainer)({
   borderRadius: 16,
   border: "none",
-  maxHeight: "65vh",
-  overflow: "auto",
   "& .MuiTableCell-head": {
     backgroundColor: "var(--tableHeaderBackgroundColor)",
     fontWeight: 600,
@@ -45,29 +42,23 @@ const StyledTableContainer = styled(TableContainer)({
     borderBottom: "none",
     position: "sticky",
     top: 0,
-    zIndex: 2,
+    zIndex: 0,
   },
   "& .MuiTableCell-root": { borderBottom: "none", borderRight: "none" },
   "& .MuiTableRow-root:hover": {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "var(--hoverBackgroundColor)",
     transition: "background-color 0.3s ease",
   },
 });
-const StyledMenu = styled(Menu)(({ theme }) => ({
-  "& .MuiPaper-root": {
-    borderRadius: 12,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-    minWidth: 180,
-    padding: theme.spacing(1),
-  },
-}));
 
 const MediaList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedMediaId, setSelectedMediaId] = useState(null);
-  const [statusLoading, setStatusLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const [uploadMedia, { isLoading: isUploading }] = useUploadMediaMutation();
   const fileInputRef = React.useRef();
 
@@ -83,26 +74,23 @@ const MediaList = () => {
     setPage(0);
   };
 
-  const handleOpenMenu = (event, mediaId) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedMediaId(mediaId);
-  };
-  const handleCloseMenu = () => {
-    setAnchorEl(null);
-    setSelectedMediaId(null);
-  };
-
-  const handleStatusChange = async (mediaId, newStatus) => {
-    setStatusLoading(true);
+  const handleStatusToggle = async (media) => {
+    const newStatus = media.status === "active" ? "deactive" : "active";
     try {
-      await updateMediaStatus({ id: mediaId, status: newStatus }).unwrap();
-      toast.success("Status changed successfully!");
+      await updateMediaStatus({ id: media.id, status: newStatus }).unwrap();
+      setSnackbar({
+        open: true,
+        message: `Status updated to ${newStatus}`,
+        severity: "success",
+      });
       refetch();
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to update status");
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to update status",
+        severity: "error",
+      });
     }
-    setStatusLoading(false);
-    handleCloseMenu();
   };
 
   const handleFileInputChange = async (e) => {
@@ -114,10 +102,18 @@ const MediaList = () => {
       formData.append("fileName", file.name);
       formData.append("url", "");
       await uploadMedia(formData).unwrap();
-      toast.success("Media uploaded successfully!");
+      setSnackbar({
+        open: true,
+        message: "Media uploaded successfully!",
+        severity: "success",
+      });
       refetch();
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to upload media");
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to upload media",
+        severity: "error",
+      });
     }
     // Reset input so same file can be selected again
     e.target.value = "";
@@ -127,13 +123,17 @@ const MediaList = () => {
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
+  const getStatusColor = (status) => {
+    return status?.toLowerCase() === "active" ? "success" : "default";
+  };
+
   return (
     <Container>
       <Card
         sx={{
           borderRadius: 2,
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-          color: "#000",
+          color: "var(--textColor)",
           minHeight: "300px",
           display: "flex",
           flexDirection: "column",
@@ -141,47 +141,101 @@ const MediaList = () => {
       >
         <CardHeader
           title={
-            <Typography
-              variant="h5"
+            <Box
               sx={{
-                fontWeight: 600,
-                color: "#000",
-                textAlign: "left",
-                fontSize: "22px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                width: "100%",
               }}
             >
-              Media List
-            </Typography>
-          }
-          action={
-            <>
-              <Button
-                variant="contained"
+              <Box
                 sx={{
-                  backgroundColor: "#000",
-                  color: "#fff",
-                  borderRadius: 2,
-                  textTransform: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  justifyContent: "space-between",
                 }}
-                onClick={handleUploadButtonClick}
-                disabled={isUploading}
               >
-                Upload Media
-              </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={handleFileInputChange}
-                accept="*"
-              />
-            </>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <File size={22} color="var(--textColor)" />
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      color: "var(--textColor)",
+                      textAlign: "left",
+                      fontSize: "22px",
+                    }}
+                    component="span"
+                  >
+                    Media List
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<Upload size={18} />}
+                  sx={{
+                    backgroundColor: "var(--purpleShadeBg)",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    textTransform: "none",
+                    px: 2,
+                    py: 1,
+                    height: "40px",
+                    minWidth: "120px",
+                    boxShadow: "none",
+                    "&:hover": {
+                      boxShadow: "none",
+                    },
+                  }}
+                  onClick={handleUploadButtonClick}
+                  disabled={isUploading}
+                >
+                  {isUploading ? "Uploading..." : "Upload Media"}
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleFileInputChange}
+                  accept="*"
+                />
+              </Box>
+            </Box>
           }
         />
         <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
           {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+              }}
+            >
               <CircularProgress />
+            </Box>
+          ) : mediaList.length === 0 ? (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+                gap: 2,
+              }}
+            >
+              <File size={48} color="#ccc" />
+              <Typography variant="body1" sx={{ color: "#666" }}>
+                No media files found
+              </Typography>
             </Box>
           ) : (
             <>
@@ -189,70 +243,89 @@ const MediaList = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell>ID</TableCell>
                       <TableCell>File Name</TableCell>
                       <TableCell>URL</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created At</TableCell>
-                      <TableCell>Action</TableCell>
+                      {/* <TableCell align="center">Actions</TableCell> */}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {mediaList.map((media) => (
                       <TableRow key={media.id}>
-                        <TableCell>{media.fileName}</TableCell>
+                        <TableCell>{media.id}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{media.fileName}</TableCell>
                         <TableCell>
-                          <a href={media.url} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={media.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "var(--purpleShadeBg)",
+                              textDecoration: "none",
+                            }}
+                          >
                             {media.url}
                           </a>
                         </TableCell>
-                        <TableCell>{media.status}</TableCell>
-                        <TableCell>{media.createdAt ? new Date(media.createdAt).toLocaleDateString() : "-"}</TableCell>
                         <TableCell>
-                          <IconButton onClick={(event) => handleOpenMenu(event, media.id)}>
-                            <MoreVertIcon />
-                          </IconButton>
-                          <StyledMenu
-                            anchorEl={anchorEl}
-                            open={Boolean(anchorEl) && selectedMediaId === media.id}
-                            onClose={handleCloseMenu}
-                            elevation={3}
-                            anchorOrigin={{
-                              vertical: "bottom",
-                              horizontal: "right",
-                            }}
-                            transformOrigin={{
-                              vertical: "top",
-                              horizontal: "right",
-                            }}
-                          >
-                            <MenuItem
-                              onClick={() =>
-                                handleStatusChange(
-                                  media.id,
-                                  media.status === "active" ? "deactive" : "active"
-                                )
-                              }
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Chip
+                              label={media.status}
+                              color={getStatusColor(media.status)}
+                              size="small"
                               sx={{
-                                borderRadius: 2,
+                                textTransform: "capitalize",
                                 fontWeight: 500,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
+                                borderRadius: "8px",
                               }}
-                              disabled={statusLoading}
+                            />
+                            <Tooltip
+                              title={`Toggle to ${
+                                media.status === "active" ? "deactive" : "active"
+                              }`}
                             >
                               <Switch
                                 checked={media.status === "active"}
-                                color="success"
+                                onChange={() => handleStatusToggle(media)}
                                 size="small"
-                                sx={{ mr: 1 }}
-                                inputProps={{ "aria-label": "status switch" }}
-                                disabled={statusLoading}
+                                sx={{
+                                  "& .MuiSwitch-switchBase.Mui-checked": {
+                                    color: "var(--purpleShadeBg)",
+                                  },
+                                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                    {
+                                      backgroundColor: "var(--purpleShadeBg)",
+                                    },
+                                }}
                               />
-                              {media.status === "active" ? "Make Deactive" : "Make Active"}
-                            </MenuItem>
-                          </StyledMenu>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
+                        <TableCell>
+                          {media.createdAt
+                            ? new Date(media.createdAt).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                        {/* <TableCell align="center">
+                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                            <Tooltip title="View File">
+                              <IconButton
+                                size="small"
+                                onClick={() => window.open(media.url, "_blank")}
+                                sx={{
+                                  color: "var(--purpleShadeBg)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(80, 60, 180, 0.1)",
+                                  },
+                                }}
+                              >
+                                <File size={18} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell> */}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -265,13 +338,28 @@ const MediaList = () => {
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 50]}
+                rowsPerPageOptions={[5, 10, 25, 50]}
               />
             </>
           )}
         </CardContent>
       </Card>
-      <ToastContainer position="top-right" autoClose={3000} />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
