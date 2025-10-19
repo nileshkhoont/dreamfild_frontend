@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Box, Typography, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useUploadMediaMutation } from "../../features/media/mediaApi";
+import { toast } from "react-toastify";
 
 const MediaUpload = ({ open, onClose, refetch }) => {
   const [file, setFile] = useState(null);
@@ -16,16 +17,17 @@ const MediaUpload = ({ open, onClose, refetch }) => {
     if (!file) return;
     try {
       const formData = new FormData();
-      formData.append("file", file); // key should match backend expectation
+      formData.append("file", file);
       formData.append("fileName", file.name);
       formData.append("url", "");
 
       await uploadMedia(formData).unwrap();
+      toast.success("Media uploaded successfully!");
       setFile(null);
       if (refetch) refetch();
       if (onClose) onClose();
     } catch (error) {
-      alert("Failed to upload media");
+      toast.error(error?.data?.message || "Failed to upload media");
     }
   };
 

@@ -34,6 +34,8 @@ import {
   useUpdateDealerStatusMutation,
   useAddDealerUserMutation,
 } from "../../apiService";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Container = styled(Box)({
   margin: "0 auto",
@@ -130,6 +132,17 @@ const Dealer = () => {
     setAddUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const getErrorMessage = (error) => {
+    // Handles both array and string messages
+    if (error?.data?.message) {
+      if (Array.isArray(error.data.message)) {
+        return error.data.message.join(", ");
+      }
+      return error.data.message;
+    }
+    return "An error occurred";
+  };
+
   const handleSubmit = async () => {
     try {
       const payload = {
@@ -139,12 +152,11 @@ const Dealer = () => {
         role: formData.role,
       };
 
-      const response = await registerDealer(payload).unwrap();
-      console.log("Dealer added successfully:", response);
-
-      // Close the dialog and reset the form
+      await registerDealer(payload).unwrap();
+      toast.success("Dealer added successfully!");
       handleCloseDialog();
     } catch (error) {
+      toast.error(getErrorMessage(error));
       console.error("Error adding dealer:", error);
     }
   };
@@ -164,9 +176,10 @@ const Dealer = () => {
     setStatusLoading(true);
     try {
       await updateDealerStatus({ id: dealerId, status: newStatus }).unwrap();
+        toast.success("Status changed successfully!");
       refetch();
     } catch (error) {
-      alert("Failed to update status");
+      toast.error(getErrorMessage(error));
     }
     setStatusLoading(false);
     handleCloseMenu();
@@ -186,10 +199,11 @@ const Dealer = () => {
   const handleAddUserSubmit = async () => {
     try {
       await addDealerUser(addUserFormData).unwrap();
+      toast.success("User added successfully!");
       handleCloseAddUserDialog();
       refetch();
     } catch (error) {
-      alert("Failed to add user");
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -503,6 +517,7 @@ const Dealer = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <ToastContainer position="top-right" autoClose={3000} />
     </Container>
   );
 };

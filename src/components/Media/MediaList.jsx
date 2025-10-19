@@ -23,6 +23,8 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useGetMediaQuery, useUpdateMediaStatusMutation, useUploadMediaMutation } from "../../apiService";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Container = styled(Box)({
   margin: "0 auto",
@@ -94,9 +96,10 @@ const MediaList = () => {
     setStatusLoading(true);
     try {
       await updateMediaStatus({ id: mediaId, status: newStatus }).unwrap();
+      toast.success("Status changed successfully!");
       refetch();
     } catch (error) {
-      alert("Failed to update status");
+      toast.error(error?.data?.message || "Failed to update status");
     }
     setStatusLoading(false);
     handleCloseMenu();
@@ -111,9 +114,10 @@ const MediaList = () => {
       formData.append("fileName", file.name);
       formData.append("url", "");
       await uploadMedia(formData).unwrap();
+      toast.success("Media uploaded successfully!");
       refetch();
     } catch (error) {
-      alert("Failed to upload media");
+      toast.error(error?.data?.message || "Failed to upload media");
     }
     // Reset input so same file can be selected again
     e.target.value = "";
@@ -267,6 +271,7 @@ const MediaList = () => {
           )}
         </CardContent>
       </Card>
+      <ToastContainer position="top-right" autoClose={3000} />
     </Container>
   );
 };
