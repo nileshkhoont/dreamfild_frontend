@@ -30,7 +30,7 @@ const baseQuery = fetchBaseQuery({
     }
     return headers;
   },
-  credentials: "include",
+  // credentials: "include",
 });
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {

@@ -22,8 +22,11 @@ import {
   Tooltip,
   Snackbar,
   Alert,
+  Dialog,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
-import { Plus, Upload, File } from "lucide-react";
+import { Plus, Upload, File, X } from "lucide-react";
 import { useGetMediaQuery, useUpdateMediaStatusMutation, useUploadMediaMutation } from "../../apiService";
 
 const Container = styled(Box)({
@@ -58,6 +61,11 @@ const MediaList = () => {
     open: false,
     message: "",
     severity: "success",
+  });
+  const [previewModal, setPreviewModal] = useState({
+    open: false,
+    imageUrl: "",
+    fileName: "",
   });
   const [uploadMedia, { isLoading: isUploading }] = useUploadMediaMutation();
   const fileInputRef = React.useRef();
@@ -125,6 +133,33 @@ const MediaList = () => {
 
   const getStatusColor = (status) => {
     return status?.toLowerCase() === "active" ? "success" : "default";
+  };
+
+  const getImageUrl = (fileUrl) => {
+    if (!fileUrl) return null;
+    // Remove first two slashes: /home/crypto/dealerapi.cryptoinsecticides.com/... 
+    // becomes dealerapi.cryptoinsecticides.com/...
+    const trimmedPath = fileUrl.replace(/^\/[^/]+\/[^/]+\//, "");
+    return `https://${trimmedPath}`;
+  };
+
+  const handleImageClick = (media) => {
+    const imageUrl = getImageUrl(media.fileUrl);
+    if (imageUrl) {
+      setPreviewModal({
+        open: true,
+        imageUrl,
+        fileName: media.fileName,
+      });
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewModal({
+      open: false,
+      imageUrl: "",
+      fileName: "",
+    });
   };
 
   return (
@@ -244,90 +279,103 @@ const MediaList = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell>ID</TableCell>
+                      <TableCell>Preview</TableCell>
                       <TableCell>File Name</TableCell>
-                      <TableCell>URL</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created At</TableCell>
                       {/* <TableCell align="center">Actions</TableCell> */}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {mediaList.map((media) => (
-                      <TableRow key={media.id}>
-                        <TableCell>{media.id}</TableCell>
-                        <TableCell sx={{ fontWeight: 500 }}>{media.fileName}</TableCell>
-                        <TableCell>
-                          <a
-                            href={media.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: "var(--purpleShadeBg)",
-                              textDecoration: "none",
-                            }}
-                          >
-                            {media.url}
-                          </a>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <Chip
-                              label={media.status}
-                              color={getStatusColor(media.status)}
-                              size="small"
-                              sx={{
-                                textTransform: "capitalize",
-                                fontWeight: 500,
-                                borderRadius: "8px",
-                              }}
-                            />
-                            <Tooltip
-                              title={`Toggle to ${
-                                media.status === "active" ? "deactive" : "active"
-                              }`}
-                            >
-                              <Switch
-                                checked={media.status === "active"}
-                                onChange={() => handleStatusToggle(media)}
+                    {mediaList.map((media) => {
+                      const imageUrl = getImageUrl(media.fileUrl);
+                      return (
+                        <TableRow key={media.id}>
+                          <TableCell>{media.id}</TableCell>
+                          <TableCell>
+                            {imageUrl ? (
+                              <Box
+                                component="img"
+                                src={imageUrl}
+                                alt={media.fileName}
+                                sx={{
+                                  width: 60,
+                                  height: 60,
+                                  objectFit: "cover",
+                                  borderRadius: 1,
+                                  cursor: "pointer",
+                                  border: "1px solid #e0e0e0",
+                                  "&:hover": {
+                                    opacity: 0.8,
+                                    transition: "opacity 0.3s",
+                                  },
+                                }}
+                                onClick={() => handleImageClick(media)}
+                              />
+                            ) : (
+                              <File size={40} color="#ccc" />
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 500 }}>{media.fileName}</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Chip
+                                label={media.status}
+                                color={getStatusColor(media.status)}
                                 size="small"
                                 sx={{
-                                  "& .MuiSwitch-switchBase.Mui-checked": {
-                                    color: "var(--purpleShadeBg)",
-                                  },
-                                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                  textTransform: "capitalize",
+                                  fontWeight: 500,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                              <Tooltip
+                                title={`Toggle to ${media.status === "active" ? "deactive" : "active"
+                                  }`}
+                              >
+                                <Switch
+                                  checked={media.status === "active"}
+                                  onChange={() => handleStatusToggle(media)}
+                                  size="small"
+                                  sx={{
+                                    "& .MuiSwitch-switchBase.Mui-checked": {
+                                      color: "var(--purpleShadeBg)",
+                                    },
+                                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                     {
                                       backgroundColor: "var(--purpleShadeBg)",
                                     },
-                                }}
-                              />
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {media.createdAt
-                            ? new Date(media.createdAt).toLocaleDateString()
-                            : "-"}
-                        </TableCell>
-                        {/* <TableCell align="center">
-                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                            <Tooltip title="View File">
-                              <IconButton
-                                size="small"
-                                onClick={() => window.open(media.url, "_blank")}
-                                sx={{
-                                  color: "var(--purpleShadeBg)",
-                                  "&:hover": {
-                                    backgroundColor: "rgba(80, 60, 180, 0.1)",
-                                  },
-                                }}
-                              >
-                                <File size={18} />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell> */}
-                      </TableRow>
-                    ))}
+                                  }}
+                                />
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {media.createdAt
+                              ? new Date(media.createdAt).toLocaleDateString()
+                              : "-"}
+                          </TableCell>
+                          {/* <TableCell align="center">
+                            <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                              <Tooltip title="View File">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => window.open(media.url, "_blank")}
+                                  sx={{
+                                    color: "var(--purpleShadeBg)",
+                                    "&:hover": {
+                                      backgroundColor: "rgba(80, 60, 180, 0.1)",
+                                    },
+                                  }}
+                                >
+                                  <File size={18} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell> */}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </StyledTableContainer>
@@ -360,6 +408,67 @@ const MediaList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Image Preview Modal */}
+      <Dialog
+        open={previewModal.open}
+        onClose={handleClosePreview}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: "90vh",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            pb: 1,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {previewModal.fileName}
+          </Typography>
+          <IconButton
+            onClick={handleClosePreview}
+            size="small"
+            sx={{
+              color: "var(--textColor)",
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.1)",
+              },
+            }}
+          >
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              maxHeight: "70vh",
+            }}
+          >
+            <img
+              src={previewModal.imageUrl}
+              alt={previewModal.fileName}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "70vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+              }}
+            />
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };
