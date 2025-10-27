@@ -31,8 +31,10 @@ import {
   Snackbar,
   Alert,
   InputAdornment,
+  Divider,
+  Autocomplete,
 } from "@mui/material";
-import { Plus, Edit2, Trash2, User, Users } from "lucide-react";
+import { Plus, Edit2, Trash2, User, Users, Eye, Link } from "lucide-react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -40,6 +42,8 @@ import {
   useRegisterDealerMutation,
   useUpdateDealerStatusMutation,
   useAddDealerUserMutation,
+  useGetTallyLedgersQuery,
+  useCreatePartyLedgerMappingMutation,
 } from "../../apiService";
 
 const Container = styled(Box)({
@@ -72,6 +76,11 @@ const Dealer = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [openAddUserDialog, setOpenAddUserDialog] = useState(false);
+  const [openViewDetailsDialog, setOpenViewDetailsDialog] = useState(false);
+  const [openLedgerMappingDialog, setOpenLedgerMappingDialog] = useState(false);
+  const [selectedDealer, setSelectedDealer] = useState(null);
+  const [selectedLedger, setSelectedLedger] = useState(null);
+  const [ledgerValidationError, setLedgerValidationError] = useState(false); // Add this state
   const [formData, setFormData] = useState({
     displayName: "",
     email: "",
@@ -96,9 +105,17 @@ const Dealer = () => {
   const [registerDealer, { isLoading: isSubmitting }] = useRegisterDealerMutation();
   const [updateDealerStatus] = useUpdateDealerStatusMutation();
   const [addDealerUser, { isLoading: isUserAdding }] = useAddDealerUserMutation();
+  
+  // New queries for ledger functionality
+  const { data: ledgerData, isLoading: isLoadingLedgers } = useGetTallyLedgersQuery(
+    { event: "fetch_ledgers" },
+    { skip: !openLedgerMappingDialog }
+  );
+  const [createPartyLedgerMapping, { isLoading: isCreatingMapping }] = useCreatePartyLedgerMappingMutation();
 
   const dealers = data?.data || [];
   const totalCount = data?.totalCount || 0;
+  const ledgers = ledgerData?.data || [];
 
   const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
@@ -194,6 +211,64 @@ const Dealer = () => {
       setSnackbar({
         open: true,
         message: error?.data?.message || "Failed to add user",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleOpenViewDetailsDialog = (dealer) => {
+    setSelectedDealer(dealer);
+    setOpenViewDetailsDialog(true);
+  };
+
+  const handleCloseViewDetailsDialog = () => {
+    setOpenViewDetailsDialog(false);
+    setSelectedDealer(null);
+  };
+
+  // New functions for ledger mapping
+  const handleOpenLedgerMappingDialog = (dealer) => {
+    setSelectedDealer(dealer);
+    setSelectedLedger(null);
+    setLedgerValidationError(false); // Reset validation error
+    setOpenLedgerMappingDialog(true);
+  };
+
+  const handleCloseLedgerMappingDialog = () => {
+    setOpenLedgerMappingDialog(false);
+    setSelectedDealer(null);
+    setSelectedLedger(null);
+    setLedgerValidationError(false); // Reset validation error
+  };
+
+  const handleLedgerMappingSubmit = async () => {
+    if (!selectedDealer || !selectedLedger) {
+      setLedgerValidationError(true); // Set validation error
+      setSnackbar({
+        open: true,
+        message: "Please select a ledger",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      await createPartyLedgerMapping({
+        userId: selectedDealer.id,
+        partyLedgerName: selectedLedger.ledgerName,
+        partyLedgerGUID: selectedLedger.ledgerGUID,
+      }).unwrap();
+      
+      setSnackbar({
+        open: true,
+        message: "Party ledger mapping created successfully!",
+        severity: "success",
+      });
+      handleCloseLedgerMappingDialog();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.data?.message || "Failed to create mapping",
         severity: "error",
       });
     }
@@ -370,6 +445,20 @@ const Dealer = () => {
                         </TableCell>
                         <TableCell align="center">
                           <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                            <Tooltip title="View Details">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenViewDetailsDialog(dealer)}
+                                sx={{
+                                  color: "var(--purpleShadeBg)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(80, 60, 180, 0.1)",
+                                  },
+                                }}
+                              >
+                                <Eye size={18} />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Add User">
                               <IconButton
                                 size="small"
@@ -382,6 +471,20 @@ const Dealer = () => {
                                 }}
                               >
                                 <User size={18} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Link Ledger">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenLedgerMappingDialog(dealer)}
+                                sx={{
+                                  color: "var(--purpleShadeBg)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(80, 60, 180, 0.1)",
+                                  },
+                                }}
+                              >
+                                <Link size={18} />
                               </IconButton>
                             </Tooltip>
                           </Box>
@@ -404,6 +507,529 @@ const Dealer = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Dealer Details Dialog */}
+      <Dialog
+        open={openViewDetailsDialog}
+        onClose={handleCloseViewDetailsDialog}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: 500,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
+            background: "#fff",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            fontSize: 22,
+            color: "var(--purpleShadeBg)",
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.2,
+          }}
+        >
+          <Eye size={22} />
+          Dealer Details
+          <IconButton
+            onClick={handleCloseViewDetailsDialog}
+            size="small"
+            sx={{ ml: "auto", color: "inherit" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            mt: 2,
+            px: 3,
+            py: 2,
+          }}
+        >
+          {selectedDealer && (
+            <Grid container spacing={3}>
+              {/* Dealer Information */}
+              <Grid item xs={12}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    color: "var(--purpleShadeBg)",
+                    mb: 2,
+                  }}
+                >
+                  Dealer Information
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  ID
+                </Typography>
+                <TextField
+                  value={selectedDealer.id || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Name
+                </Typography>
+                <TextField
+                  value={selectedDealer.displayName || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Email
+                </Typography>
+                <TextField
+                  value={selectedDealer.email || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Number
+                </Typography>
+                <TextField
+                  value={selectedDealer.number || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  GST Number
+                </Typography>
+                <TextField
+                  value={selectedDealer.gstNumber || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Status
+                </Typography>
+                <TextField
+                  value={selectedDealer.status || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Shop Latitude
+                </Typography>
+                <TextField
+                  value={selectedDealer.shopLocationLatitude || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Shop Longitude
+                </Typography>
+                <TextField
+                  value={selectedDealer.shopLocationLongitude || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Created At
+                </Typography>
+                <TextField
+                  value={
+                    selectedDealer.createdAt
+                      ? new Date(selectedDealer.createdAt).toLocaleDateString()
+                      : "-"
+                  }
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
+                  Updated At
+                </Typography>
+                <TextField
+                  value={
+                    selectedDealer.updatedAt
+                      ? new Date(selectedDealer.updatedAt).toLocaleDateString()
+                      : "-"
+                  }
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              {/* Dealer Users Section */}
+              {selectedDealer.dealerUsers && selectedDealer.dealerUsers.length > 0 && (
+                <>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--purpleShadeBg)",
+                        mb: 2,
+                      }}
+                    >
+                      Dealer Users ({selectedDealer.dealerUsers.length})
+                    </Typography>
+                  </Grid>
+                  
+                  {selectedDealer.dealerUsers.map((user, index) => (
+                    <React.Fragment key={user.id}>
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 600,
+                            color: "#374151",
+                            mb: 1,
+                          }}
+                        >
+                          User {index + 1}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={12} md={4}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#374151",
+                            mb: 0.5,
+                          }}
+                        >
+                          Name
+                        </Typography>
+                        <TextField
+                          value={user.displayName || "-"}
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              fontSize: "14px",
+                              borderRadius: "12px",
+                              backgroundColor: "#f9f9f9",
+                            },
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={4}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#374151",
+                            mb: 0.5,
+                          }}
+                        >
+                          Email
+                        </Typography>
+                        <TextField
+                          value={user.email || "-"}
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              fontSize: "14px",
+                              borderRadius: "12px",
+                              backgroundColor: "#f9f9f9",
+                            },
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={4}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#374151",
+                            mb: 0.5,
+                          }}
+                        >
+                          Number
+                        </Typography>
+                        <TextField
+                          value={user.number || "-"}
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              fontSize: "14px",
+                              borderRadius: "12px",
+                              backgroundColor: "#f9f9f9",
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </React.Fragment>
+                  ))}
+                </>
+              )}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleCloseViewDetailsDialog}
+            sx={{
+              backgroundColor: "var(--purpleShadeBg)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 24px",
+              fontWeight: 600,
+              fontSize: 15,
+              textTransform: "none",
+              whiteSpace: "nowrap",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "var(--purpleShadeBg)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              },
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Dealer Dialog */}
       <Dialog
@@ -808,6 +1434,209 @@ const Dealer = () => {
               <CircularProgress size={22} sx={{ color: "#fff" }} />
             ) : (
               "Add User"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Ledger Mapping Dialog */}
+      <Dialog
+        open={openLedgerMappingDialog}
+        onClose={handleCloseLedgerMappingDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: 300,
+            minWidth: 380,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
+            background: "#fff",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            fontSize: 22,
+            color: "var(--purpleShadeBg)",
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.2,
+          }}
+        >
+          <Link size={22} />
+          Link Ledger
+          <IconButton
+            onClick={handleCloseLedgerMappingDialog}
+            size="small"
+            sx={{ ml: "auto", color: "inherit" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            mt: 3,
+            px: 3,
+            py: 2,
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: 3,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Dealer Name
+              </Typography>
+              <TextField
+                value={selectedDealer?.displayName || ""}
+                fullWidth
+                size="small"
+                variant="outlined"
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "12px",
+                    backgroundColor: "#f9f9f9",
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                  textAlign: "left",
+                }}
+              >
+                Select Ledger *
+              </Typography>
+              {isLoadingLedgers ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : (
+                <Autocomplete
+                  options={ledgers}
+                  getOptionLabel={(option) => option.ledgerName || ""}
+                  value={selectedLedger}
+                  onChange={(event, newValue) => {
+                    setSelectedLedger(newValue);
+                    setLedgerValidationError(false); // Reset error when user selects
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select a ledger"
+                      size="small"
+                      variant="outlined"
+                      error={ledgerValidationError && !selectedLedger}
+                      helperText={ledgerValidationError && !selectedLedger ? "Please select a ledger" : ""}
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          fontSize: "14px",
+                          borderRadius: "12px",
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: (ledgerValidationError && !selectedLedger) ? "#d32f2f" : "var(--textFieldBorderColor, #ced4da)",
+                          borderRadius: "12px",
+                        },
+                        "& .MuiFormHelperText-root": {
+                          color: "#d32f2f",
+                          fontSize: "12px",
+                          margin: "4px 0 0 0",
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {option.ledgerName}
+                        </Typography>
+                        {option.parentGroup && (
+                          <Typography variant="caption" sx={{ color: "#666" }}>
+                            {option.parentGroup}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+                  isOptionEqualToValue={(option, value) => 
+                    option.ledgerGUID === value?.ledgerGUID
+                  }
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleCloseLedgerMappingDialog}
+            sx={{
+              fontWeight: 600,
+              fontSize: 15,
+              borderRadius: "12px",
+              textTransform: "none",
+              color: "var(--textColor)",
+              border: "1px solid var(--textFieldBorderColor, #ced4da)",
+              padding: "8px 20px",
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleLedgerMappingSubmit}
+            disabled={isCreatingMapping}
+            sx={{
+              backgroundColor: "var(--purpleShadeBg)",
+              color: "#fff !important", 
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 24px",
+              fontWeight: 600,
+              fontSize: 15,
+              textTransform: "none",
+              whiteSpace: "nowrap",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "var(--purpleShadeBg)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              },
+              "&:disabled": {
+                backgroundColor: "var(--purpleShadeBg)",
+                color: "#fff !important",
+                opacity: 0.7,
+              },
+            }}
+          >
+            {isCreatingMapping ? (
+              <CircularProgress size={22} sx={{ color: "#fff" }} />
+            ) : (
+              "Submit"
             )}
           </Button>
         </DialogActions>

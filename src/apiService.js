@@ -719,6 +719,24 @@ export const apiSlice = createApi({
       }),
       providesTags: ["ProductReviews"],
     }),
+
+    // Add these new endpoints in the endpoints section
+    getTallyLedgers: builder.query({
+      query: ({ event = "fetch_ledgers" }) => ({
+        url: `/tally/fetch-master-data?event=${event}`,
+        method: "GET",
+      }),
+      providesTags: ["TallyLedgers"],
+    }),
+
+    createPartyLedgerMapping: builder.mutation({
+      query: (data) => ({
+        url: "/mapping-master/party-ledger",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Dealers"],
+    }),
   }),
 });
 
@@ -800,4 +818,8 @@ export const {
   useUpdateProductReviewMutation,
   useDeleteProductReviewMutation,
   useGetAllProductReviewsQuery,
+
+  // Add these missing exports
+  useGetTallyLedgersQuery,
+  useCreatePartyLedgerMappingMutation,
 } = apiSlice;

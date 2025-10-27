@@ -33,21 +33,26 @@ import {
   Cake,
   CalendarHeart,
   Gift,
+  Users,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
-// Removed API hooks: useGetDashboardInfoQuery, usePendingWorkFromHomeQuery, useGetPendingPunchoutRequestsQuery
 import {
   useUpdateLeaveStatusMutation,
   usePunchInMutation,
   usePunchOutMutation,
   useUpdateWorkFromHomeStatusMutation,
   useUpdatePunchCorrectionStatusMutation,
+  useGetDealersQuery,
+  useGetTallyProductsQuery,
+  useGetTallyOrdersQuery,
 } from "../apiService";
 import { CustomLoader, LoaderContainer } from "./Layout/CustomLoader";
 import { ConfirmationDialog } from "./Layout/ConfirmationDialog";
 
 import { Check, Close } from "@mui/icons-material";
 import { useAuth } from "../utils/AuthContext";
-import { X } from "lucide-react"; // or use @mui/icons-material/Close
+import { X } from "lucide-react";
 
 const truncateText = (text, maxLength) => {
   if (!text) return "";
@@ -65,23 +70,23 @@ function NoDataMessage({ icon: Icon, message }) {
         justifyContent: "center",
         flex: 1,
         gap: 1,
-        paddingTop: 6, // decreased from 11 to 6
+        paddingTop: 6,
       }}
     >
       <Box
         sx={{
-          width: 56, // decreased from 80 to 56
-          height: 56, // decreased from 80 to 56
+          width: 56,
+          height: 56,
           borderRadius: "50%",
           background: "linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          mb: 1.5, // decreased from 2 to 1.5
+          mb: 1.5,
           opacity: 0.8,
         }}
       >
-        <Icon size={24} color="#757575" /> {/* decreased from 32 to 24 */}
+        <Icon size={24} color="#757575" />
       </Box>
       <Typography variant="body2" color="text.secondary" align="center">
         {message}
@@ -99,7 +104,7 @@ function StatusChip({ status }) {
         bgcolor: "var(--successBgColor)",
         color: "var(--successTextColor)",
         fontWeight: 600,
-        borderRadius: "10px", // match notification/attendance card
+        borderRadius: "10px",
         px: 2,
         py: 0.5,
         fontSize: "0.95em",
@@ -178,8 +183,29 @@ function Home() {
 
   const { triggerPunch, punchEvent } = useAuth();
 
+  // API calls for counts
+  const { data: dealersData, isLoading: dealersLoading } = useGetDealersQuery({ 
+    page: 0, 
+    limit: 0
+  });
+  
+  const { data: productsData, isLoading: productsLoading } = useGetTallyProductsQuery({ 
+    page: 0, 
+    limit: 0 
+  });
+  
+  const { data: ordersData, isLoading: ordersLoading } = useGetTallyOrdersQuery({ 
+    page: 0, 
+    limit: 0,
+    event: "fetch_sales" 
+  });
 
-  // Dummy data for dashboard info
+  // Extract counts from API responses
+  const dealerCount = dealersData?.totalCount || 0;
+  const productCount = productsData?.totalCount || 0;
+  const orderCount = ordersData?.totalCount || 0;
+
+  // Dummy data for dashboard info (keep existing data for other sections)
   const dummyDashboardData = {
     responseData: {
       // For user role
@@ -228,9 +254,9 @@ function Home() {
     { id: "pc1", name: "Grace", type: "punchCorrection", correctionType: "punch-in", requestedTime: "09:30", reason: "Forgot to punch in", status: "pending", createdAt: "2025-10-18" },
   ];
 
-  // Use dummy data instead of API
+  // Use dummy data instead of API for other sections
   const data = dummyDashboardData;
-  const isLoading = false;
+  const isLoading = dealersLoading || productsLoading || ordersLoading;
   const refetch = () => {};
   const pendingLeaves = data?.responseData?.pendingLeaves || [];
   const pendingWfhRequests = dummyPendingWfhRequests;
@@ -300,9 +326,7 @@ function Home() {
     }
   };
 
-  // ...socket.io logic removed...
-
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <LoaderContainer>
         <CustomLoader color="#7267f0" />
@@ -317,9 +341,9 @@ function Home() {
     notCheckedIn: data?.responseData?.currentMonthLeaveDays ?? "-",
   };
   const adminStats = {
-    checkedIn: data?.responseData?.punchIn,
-    onLeave: data?.responseData?.onLeave,
-    notCheckedIn: data?.responseData?.notPunchIn,
+    checkedIn: dealerCount,
+    onLeave: productCount,
+    notCheckedIn: orderCount,
   };
   const stats = role === "user" ? userStats : adminStats;
 
@@ -331,7 +355,6 @@ function Home() {
     return `${day}-${month}-${year}`;
   };
 
-  // Add this helper at the top (if not already present)
   const formatDateDMY = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -347,7 +370,6 @@ function Home() {
     try {
       let response;
       if (selectedWfh) {
-        // WFH action: send comment as reason
         response = await updateWorkFromHomeStatus({
           wfhId: selectedWfh.wfhId,
           status: actionType,
@@ -359,14 +381,11 @@ function Home() {
           severity: "success",
         });
         setSelectedWfh(null);
-        // REMOVE: if (typeof refetch === "function") refetch();
-        // No manual refetch needed for WFH, RTK Query will update the list automatically
       } else if (selectedPunchout) {
-        // Punchout correction approval/rejection
         response = await updatePunchCorrectionStatus({
           requestId: selectedPunchout.id,
           status: actionType,
-          adminComment: comment, // match backend param name
+          adminComment: comment,
         }).unwrap();
         setSnackbar({
           open: true,
@@ -379,14 +398,12 @@ function Home() {
         setSelectedPunchout(null);
         if (typeof refetch === "function") refetch();
       } else {
-        // Leave action
         response = await updateLeaveStatus({
           leaveId: selectedLeave,
           status: actionType,
           comment,
         }).unwrap();
 
-        // Show leave notification message if present
         if (
           response?.responseData?.notification?.type === "leaveStatusUpdate" &&
           response?.responseData?.notification?.message
@@ -780,18 +797,17 @@ function Home() {
   // Add userName for display
   const userName = loggedInUser?.userName || data?.responseData?.userName || "";
 
-
   return (
     <Box
       sx={{
         pt: "2rem",
-        width: "100%", // Use viewport width to ensure full width
+        width: "100%",
       }}
     >
       {/* Header with name on right */}
 
       <Grid container spacing={3} mb={3} sx={{ width: "100%", mx: "-12px"}}>
-        {/* First Card */}
+        {/* First Card - Dealers */}
         <Grid item xs={12} sm={6} md={4} sx={{ pl: 0 }}>
           <Paper
             sx={{
@@ -818,15 +834,19 @@ function Home() {
                   {stats.checkedIn}
                 </Typography>
                 <Typography sx={{ color: "white" }}>
-                  {role === "user" ? "Today's Working Hours" : "Checked In"}
+                  {role === "user" ? "Today's Working Hours" : "Total Dealers"}
                 </Typography>
               </Box>
-              <UserCheck size={48} color="#fff" />
+              {role === "user" ? (
+                <UserCheck size={48} color="#fff" />
+              ) : (
+                <Users size={48} color="#fff" />
+              )}
             </Box>
           </Paper>
         </Grid>
 
-        {/* Second Card */}
+        {/* Second Card - Products */}
         <Grid item xs={12} sm={6} md={4}>
           <Paper
             sx={{
@@ -853,15 +873,19 @@ function Home() {
                   {stats.onLeave}
                 </Typography>
                 <Typography sx={{ color: "white" }}>
-                  {role === "user" ? "Monthly Working Hours" : "On Leave"}
+                  {role === "user" ? "Monthly Working Hours" : "Total Products"}
                 </Typography>
               </Box>
-              <UserX size={48} color="#fff" />
+              {role === "user" ? (
+                <UserX size={48} color="#fff" />
+              ) : (
+                <Package size={48} color="#fff" />
+              )}
             </Box>
           </Paper>
         </Grid>
 
-        {/* Third Card */}
+        {/* Third Card - Orders */}
         <Grid item xs={12} sm={6} md={4} sx={{ pr: 0 }}>
           <Paper
             elevation={0}
@@ -891,18 +915,23 @@ function Home() {
                 <Typography sx={{ color: "white" }}>
                   {role === "user"
                     ? "Current Month Leave Days"
-                    : "Not Checked In"}
+                    : "Total Orders"}
                 </Typography>
               </Box>
-              <AlertCircle size={48} color="#fff" />
+              {role === "user" ? (
+                <AlertCircle size={48} color="#fff" />
+              ) : (
+                <ShoppingCart size={48} color="#fff" />
+              )}
             </Box>
           </Paper>
         </Grid>
       </Grid>
 
+      {/* Rest of the existing code remains the same... */}
       {/* Second Row - Attendance/Leaves */}
       <Grid container spacing={3} mb={3} sx={{ width: "100%", mx: "-12px"}}>
-        {/* Attendance Card */}
+        {/* Recent Activity Card */}
         <Grid item xs={12} md={8} sx={{ pl: 0 }}>
           <Paper
             elevation={0}
@@ -931,80 +960,19 @@ function Home() {
                 color="var(--textColor)"
                 sx={{ fontSize: 22 }}
               >
-                {role === "user" ? "Monthly Attendance" : "Today's Attendance"}
+                Recent Dealer Activities
               </Typography>
             </Box>
             <Box sx={{ flex: 1, overflow: "auto", pr: 1 }}>
-              {role === "user" ? (
-                renderMonthlyAttendance()
-              ) : data?.responseData?.todaysAttendance?.length > 0 ? (
-                <Stack spacing={2}>
-                  {data.responseData.todaysAttendance.map((employee, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        p: "10px 16px",
-                        bgcolor: "#f5f5f5",
-                        borderRadius: "10px",
-                        minHeight: "44px",
-                        borderBottom: "1px solid #e5e7eb",
-                        fontWeight: 500,
-                        color: "var(--textColor)",
-                        fontSize: "0.98rem",
-                        gap: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 600, color: "var(--textColor)" }}
-                      >
-                        {employee.name}
-                        {employee.isWorkFromHome && (
-                          <span
-                            style={{
-                              marginLeft: 8,
-                              padding: "2px 8px",
-                              backgroundColor: "var(--backgroundColor, #EFEFEF)",
-                              color: "var(--textColor, #191919)",
-                              borderRadius: "8px",
-                              fontWeight: 600,
-                              fontSize: "0.75rem",
-                              display: "inline-block",
-                              height: 22,
-                              verticalAlign: "middle",
-                            }}
-                          >
-                          RW
-                          </span>
-                        )}
-                      </Typography>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
-                        {employee.time && (
-                          <Typography variant="body2" color="text.secondary">
-                            {employee.time}
-                          </Typography>
-                        )}
-                        <StatusChip status={employee.status} />
-                      </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              ) : (
-                <NoDataMessage
-                  icon={UserMinus}
-                  message="No attendance records available for today"
-                />
-              )}
+              <NoDataMessage
+                icon={UserMinus}
+                message="No recent dealer activities available"
+              />
             </Box>
           </Paper>
         </Grid>
 
-        {/* Leaves Card */}
+        {/* System Status Card */}
         <Grid item xs={12} md={4} sx={{ pr: 0 }}>
           <Paper
             elevation={0}
@@ -1025,71 +993,15 @@ function Home() {
                 color="var(--textColor)"
                 sx={{ fontSize: 22 }}
               >
-                {role === "user" ? "Yearly Leaves" : "Today's Leaves"}
+                System Status
               </Typography>
             </Box>
             <Box sx={{ overflow: "hidden", flex: 1 }}>
               <Box sx={{ height: "100%", overflow: "auto", pr: 1 }}>
-                {role === "user" ? (
-                  renderYearlyLeaves()
-                ) : data?.responseData?.todaysLeaves?.length > 0 ? (
-                  <Stack spacing={2}>
-                    {data?.responseData?.todaysLeaves?.map((leave, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          p: "10px 16px",
-                          bgcolor: "#f5f5f5",
-                          borderRadius: "10px",
-                          minHeight: "44px",
-                          borderBottom: "1px solid #e5e7eb",
-                          fontWeight: 500,
-                          color: "var(--textColor)",
-                          fontSize: "0.98rem",
-                          gap: 2,
-                        }}
-                      >
-                        <Box sx={{ minWidth: 110 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, color: "var(--textColor)" }}
-                          >
-                            {leave.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "#64748b" }}
-                          >
-                            {leave.halfDay || "Full-day"}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={leave.leaveType}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            fontSize: "0.95em",
-                            ml: 2,
-                            minWidth: 70,
-                            textAlign: "center",
-                            textTransform: "capitalize",
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Stack>
-                ) : (
-                  <NoDataMessage
-                    icon={FileX}
-                    message="No leaves recorded for today"
-                  />
-                )}
+                <NoDataMessage
+                  icon={FileX}
+                  message="All systems operational"
+                />
               </Box>
             </Box>
           </Paper>
@@ -1099,7 +1011,7 @@ function Home() {
       {/* Third Row - Only for admin */}
       {role === "admin" && (
         <Grid container spacing={3} sx={{ width: "100%", mx: "-12px"}}>
-          {/* Upcoming Leaves Card */}
+          {/* Quick Actions Card */}
           <Grid item xs={12} md={6} sx={{ pl: 0 }}>
             <Paper
               elevation={0}
@@ -1120,77 +1032,19 @@ function Home() {
                   color="var(--textColor)"
                   sx={{ fontSize: 22 }}
                 >
-                  Upcoming Approved Leaves
+                  Quick Actions
                 </Typography>
               </Box>
               <Box sx={{ overflow: "auto", flex: 1 }}>
-                {data?.responseData?.upcomingLeaves?.length > 0 ? (
-                  <Stack spacing={2}>
-                    {data.responseData.upcomingLeaves.map((leave, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          p: "10px 16px",
-                          bgcolor: "#f5f5f5",
-                          borderRadius: "10px",
-                          minHeight: "44px",
-                          borderBottom: "1px solid #e5e7eb",
-                          fontWeight: 500,
-                          color: "var(--textColor)",
-                          fontSize: "0.98rem",
-                          gap: 2,
-                        }}
-                      >
-                        <Box sx={{ minWidth: 110 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, color: "var(--textColor)" }}
-                          >
-                            {leave.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "#64748b" }}
-                          >
-                            {leave.startDate === leave.endDate
-                              ? formatDate(leave.startDate)
-                              : `${formatDate(leave.startDate)} - ${formatDate(
-                                leave.endDate
-                              )}`}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={leave.leaveType}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            fontSize: "0.95em",
-                            ml: 2,
-                            minWidth: 70,
-                            textAlign: "center",
-                            textTransform: "capitalize",
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Stack>
-                ) : (
-                  <NoDataMessage
-                    icon={CalendarX}
-                    message="No upcoming leaves scheduled"
-                  />
-                )}
+                <NoDataMessage
+                  icon={CalendarX}
+                  message="No quick actions available"
+                />
               </Box>
             </Paper>
           </Grid>
 
-          {/* Pending Leave Requests Card */}
+          {/* Notifications Card */}
           <Grid item xs={12} md={6}>
             <Paper
               elevation={0}
@@ -1211,20 +1065,14 @@ function Home() {
                   color="var(--textColor)"
                   sx={{ fontSize: 22 }}
                 >
-                  Pending Requests
+                  Notifications
                 </Typography>
               </Box>
               <Box sx={{ overflow: "auto", flex: 1 }}>
-                {pendingLeaves.length > 0 ||
-                  pendingWfhRequests.length > 0 ||
-                  pendingPunchoutRequests.length > 0 ? (
-                  renderPendingLeaveRequests()
-                ) : (
-                  <NoDataMessage
-                    icon={ClipboardX}
-                    message="No pending  requests available"
-                  />
-                )}
+                <NoDataMessage
+                  icon={ClipboardX}
+                  message="No new notifications"
+                />
               </Box>
             </Paper>
           </Grid>
