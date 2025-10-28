@@ -657,13 +657,11 @@ export const apiSlice = createApi({
       providesTags: ["TallyProducts"],
     }),
     updateTallyProduct: builder.mutation({
-      query: ({ id, productSpecification }) => ({
-        url: `/tally-products/${id}`,
+      query: (formData) => ({
+        url: `/tally-products/${formData.get('id')}`,
         method: "PUT",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: { productSpecification },
+        body: formData,
+        // Remove the headers - let the browser set them automatically for FormData
       }),
       invalidatesTags: ["TallyProducts"],
     }),

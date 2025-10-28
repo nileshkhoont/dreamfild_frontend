@@ -41,6 +41,9 @@ import {
   Tag,
   DollarSign,
   Plus,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -101,6 +104,57 @@ const VideoLink = styled(Box)({
   },
 });
 
+const ImageUploadContainer = styled(Box)({
+  border: "2px dashed #e0e0e0",
+  borderRadius: "12px",
+  padding: "2rem",
+  textAlign: "center",
+  cursor: "pointer",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    borderColor: "var(--purpleShadeBg)",
+    backgroundColor: "rgba(80, 60, 180, 0.05)",
+  },
+  "&.dragover": {
+    borderColor: "var(--purpleShadeBg)",
+    backgroundColor: "rgba(80, 60, 180, 0.1)",
+  },
+});
+
+const ImagePreviewContainer = styled(Box)({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "12px",
+  marginTop: "16px",
+});
+
+const ImagePreviewItem = styled(Box)({
+  position: "relative",
+  width: "120px",
+  height: "120px",
+  borderRadius: "8px",
+  overflow: "hidden",
+  border: "1px solid #e0e0e0",
+  "& img": {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+});
+
+const RemoveImageButton = styled(IconButton)({
+  position: "absolute",
+  top: "4px",
+  right: "4px",
+  backgroundColor: "rgba(220, 38, 38, 0.9)",
+  color: "white",
+  width: "24px",
+  height: "24px",
+  "&:hover": {
+    backgroundColor: "rgba(220, 38, 38, 1)",
+  },
+});
+
 const TallyProductVariants = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -130,6 +184,10 @@ const TallyProductVariants = () => {
     severity: "success",
   });
 
+  // ADD THESE MISSING STATE VARIABLES FOR IMAGE HANDLING
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [dragOver, setDragOver] = useState(false);
+
   const [updateTallyProduct, { isLoading: isUpdating }] =
     useUpdateTallyProductMutation();
   const [addProductReview, { isLoading: isAddingReview }] =
@@ -148,6 +206,49 @@ const TallyProductVariants = () => {
   });
 
   const reviews = reviewsData?.data || [];
+
+  // ADD THESE MISSING IMAGE HANDLING FUNCTIONS
+  const handleImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    handleFiles(files);
+  };
+
+  const handleFiles = (files) => {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImages(prev => [...prev, {
+          file,
+          preview: e.target.result,
+          id: Date.now() + Math.random()
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  };
+
+  const removeImage = (imageId) => {
+    setSelectedImages(prev => prev.filter(img => img.id !== imageId));
+  };
 
   if (!productData) {
     return (
@@ -248,6 +349,7 @@ const TallyProductVariants = () => {
     setEditDialogOpen(false);
     setSelectedProduct(null);
     setSpecifications([{ key: "", value: "" }]);
+    setSelectedImages([]); // Clear images
   };
 
   const handleReviewDialogClose = () => {
@@ -277,21 +379,33 @@ const TallyProductVariants = () => {
 
   const handleEditDialogSave = async () => {
     try {
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      
+      // Add product ID
+      formData.append('id', selectedProduct.id);
+      
+      // Add specifications
       const specsObject = {};
       specifications.forEach(spec => {
         if (spec.key.trim() && spec.value.trim()) {
           specsObject[spec.key.trim()] = spec.value.trim();
         }
       });
-
+      
       const specsString = Object.keys(specsObject).length > 0 
         ? JSON.stringify(specsObject) 
         : "";
+      
+      formData.append('productSpecification', specsString);
+      
+      // Add images
+      selectedImages.forEach((imageObj, index) => {
+        formData.append(`images`, imageObj.file);
+      });
 
-      await updateTallyProduct({
-        id: selectedProduct.id,
-        productSpecification: specsString,
-      }).unwrap();
+      // Call the API with FormData
+      await updateTallyProduct(formData).unwrap();
 
       // Update local productData state
       setProductData(prevData => ({
@@ -305,7 +419,7 @@ const TallyProductVariants = () => {
 
       setSnackbar({
         open: true,
-        message: "Specification updated successfully!",
+        message: "Specification and images updated successfully!",
         severity: "success",
       });
       handleEditDialogClose();
@@ -662,6 +776,8 @@ const TallyProductVariants = () => {
               {productData.variants?.map((variant) => (
                 <Grid item xs={12} sm={6} md={4} key={variant.id}>
                   <VariantCard elevation={1}>
+                    
+
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                         {variant.productName}
@@ -752,6 +868,103 @@ const TallyProductVariants = () => {
                         </Box>
                       </Box>
                     )}
+                    {/* Product Images Section */}
+                    {variant.images && variant.images.length > 0 && (
+                      <Box sx={{ mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            overflow: "auto",
+                            pb: 1,
+                            "&::-webkit-scrollbar": {
+                              height: "4px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              backgroundColor: "#f1f3f4",
+                              borderRadius: "2px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              backgroundColor: "#c1c7cd",
+                              borderRadius: "2px",
+                              "&:hover": {
+                                backgroundColor: "#a8b1ba",
+                              },
+                            },
+                          }}
+                        >
+                          {variant.images.map((image, index) => (
+                            <Box
+                              key={image.id}
+                              sx={{
+                                position: "relative",
+                                minWidth: "80px",
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                border: "2px solid #e0e0e0",
+                                cursor: "pointer",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                  borderColor: "var(--purpleShadeBg)",
+                                  transform: "scale(1.05)",
+                                },
+                              }}
+                              onClick={() => {
+                                // Optional: Open image in modal or new tab
+                                window.open(`${import.meta.env.VITE_BACKEND_URL}${image.imageUrl}`, '_blank');
+                              }}
+                            >
+                              <img
+                                src={`${import.meta.env.VITE_BACKEND_URL}${image.imageUrl}`}
+                                alt={`${variant.productName} - Image ${index + 1}`}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                                onError={(e) => {
+                                  // Fallback in case image fails to load
+                                  e.target.style.display = 'none';
+                                  e.target.parentNode.innerHTML = `
+                                    <div style="
+                                      width: 100%;
+                                      height: 100%;
+                                      display: flex;
+                                      align-items: center;
+                                      justify-content: center;
+                                      background-color: #f5f5f5;
+                                      color: #999;
+                                      font-size: 12px;
+                                    ">
+                                      No Image
+                                    </div>
+                                  `;
+                                }}
+                              />
+                              {variant.images.length > 1 && (
+                                <Box
+                                  sx={{
+                                    position: "absolute",
+                                    bottom: "4px",
+                                    right: "4px",
+                                    backgroundColor: "rgba(0,0,0,0.7)",
+                                    color: "white",
+                                    borderRadius: "4px",
+                                    padding: "2px 4px",
+                                    fontSize: "10px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {index + 1}/{variant.images.length}
+                                </Box>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
 
                     <Divider sx={{ my: 2 }} />
 
@@ -809,263 +1022,377 @@ const TallyProductVariants = () => {
         </CardContent>
       </Card>
 
-      {/* Edit Specification Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={handleEditDialogClose}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            minHeight: 500,
-            minWidth: 600,
-            borderRadius: 4,
-            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
-            background: "#fff",
+      // Update the Edit Specification Dialog
+<Dialog
+  open={editDialogOpen}
+  onClose={handleEditDialogClose}
+  maxWidth="lg"
+  fullWidth
+  PaperProps={{
+    sx: {
+      height: '95vh', // Increase height
+      maxHeight: '95vh',
+      borderRadius: 4,
+      boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
+      background: "#fff",
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden', // Prevent dialog overflow
+    },
+  }}
+>
+  <DialogTitle
+    sx={{
+      fontWeight: 700,
+      fontSize: 22,
+      color: "var(--purpleShadeBg)",
+      pb: 1,
+      display: "flex",
+      alignItems: "center",
+      gap: 1.2,
+      flexShrink: 0,
+      borderBottom: '1px solid #e0e0e0', // Add border for visual separation
+    }}
+  >
+    <Edit2 size={22} />
+    Edit Product Specifications
+    <IconButton
+      onClick={handleEditDialogClose}
+      size="small"
+      sx={{ ml: "auto", color: "inherit" }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  
+  <DialogContent
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 2, // Reduce gap
+      px: 3,
+      py: 2,
+      background: "rgba(255,255,255,0.95)",
+      flex: 1,
+      overflow: 'hidden', // Prevent content overflow
+      position: 'relative',
+    }}
+  >
+    {/* Scrollable content container */}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        flex: 1,
+        overflow: 'auto',
+        pr: 1, // Space for scrollbar
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: '#f1f1f1',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#c1c1c1',
+          borderRadius: '3px',
+          '&:hover': {
+            backgroundColor: '#a1a1a1',
           },
+        },
+      }}
+    >
+      {selectedProduct && (
+        <Box
+          sx={{
+            p: 2,
+            backgroundColor: "#f9f9f9",
+            borderRadius: "8px",
+            flexShrink: 0,
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, color: "#333" }}
+          >
+            Product: {selectedProduct.productName}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
+            Price: ₹{selectedProduct.price}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Product Images Section */}
+      <Box sx={{ flexShrink: 0 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "#374151",
+            }}
+          >
+            Product Images
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            {selectedImages.length} image(s) selected
+          </Typography>
+        </Box>
+
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleImageSelect}
+          style={{ display: 'none' }}
+          id="image-upload-input"
+        />
+        
+        <ImageUploadContainer
+          className={dragOver ? 'dragover' : ''}
+          onClick={() => document.getElementById('image-upload-input').click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          sx={{
+            minHeight: '120px', // Reduce height
+            padding: '1.5rem',
+          }}
+        >
+          <Upload size={40} color="#ccc" />
+          <Typography variant="h6" sx={{ mt: 1, mb: 0.5, color: "#666", fontSize: '16px' }}>
+            Upload Product Images
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#999", fontSize: '12px' }}>
+            Drag and drop images here or click to browse
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#999", mt: 0.5, display: "block", fontSize: '10px' }}>
+            Supports: JPG, PNG, GIF (Max 5MB per image)
+          </Typography>
+        </ImageUploadContainer>
+
+        {selectedImages.length > 0 && (
+          <ImagePreviewContainer sx={{ mt: 1 }}>
+            {selectedImages.map((imageObj) => (
+              <ImagePreviewItem key={imageObj.id} sx={{ width: '80px', height: '80px' }}>
+                <img src={imageObj.preview} alt="Preview" />
+                <RemoveImageButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(imageObj.id);
+                  }}
+                  sx={{ width: '20px', height: '20px', top: '2px', right: '2px' }}
+                >
+                  <X size={12} />
+                </RemoveImageButton>
+              </ImagePreviewItem>
+            ))}
+          </ImagePreviewContainer>
+        )}
+      </Box>
+
+      <Divider sx={{ flexShrink: 0, my: 1 }} />
+
+      {/* Product Specifications Section */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontSize: "16px",
+            fontWeight: 600,
+            color: "#374151",
+          }}
+        >
+          Product Specifications
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<Plus size={16} />}
+          onClick={handleAddSpecification}
+          sx={{
+            color: "var(--purpleShadeBg)",
+            borderColor: "var(--purpleShadeBg)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            textTransform: "none",
+            "&:hover": {
+              backgroundColor: "rgba(80, 60, 180, 0.1)",
+            },
+          }}
+        >
+          Add Field
+        </Button>
+      </Box>
+
+      {/* Specifications List */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          flexShrink: 0, // Don't shrink
+          minHeight: 'auto', // Allow natural height
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 700,
-            fontSize: 22,
-            color: "var(--purpleShadeBg)",
-            pb: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.2,
-          }}
-        >
-          <Edit2 size={22} />
-          Edit Product Specifications
-          <IconButton
-            onClick={handleEditDialogClose}
-            size="small"
-            sx={{ ml: "auto", color: "inherit" }}
+        {specifications.map((spec, index) => (
+          <Box
+            key={index}
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "flex-start",
+              p: 2,
+              backgroundColor: "#f8f9fa",
+              borderRadius: "12px",
+              border: "1px solid #e9ecef",
+            }}
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
-            mt: 2,
-            px: 3,
-            py: 2,
-            background: "rgba(255,255,255,0.95)",
-            borderRadius: 3,
-          }}
-        >
-          {selectedProduct && (
-            <Box
-              sx={{
-                mb: 2,
-                p: 2,
-                backgroundColor: "#f9f9f9",
-                borderRadius: "8px",
-              }}
-            >
+            <Box sx={{ flex: 1 }}>
               <Typography
                 variant="body2"
-                sx={{ fontWeight: 600, color: "#333" }}
-              >
-                Product: {selectedProduct.productName}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
-                Price: ₹{selectedProduct.price}
-              </Typography>
-            </Box>
-          )}
-
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "#374151",
-              }}
-            >
-              Product Specifications
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Plus size={16} />}
-              onClick={handleAddSpecification}
-              sx={{
-                color: "var(--purpleShadeBg)",
-                borderColor: "var(--purpleShadeBg)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                textTransform: "none",
-                "&:hover": {
-                  backgroundColor: "rgba(80, 60, 180, 0.1)",
-                },
-              }}
-            >
-              Add Field
-            </Button>
-          </Box>
-
-          <Box
-            sx={{
-              maxHeight: 300,
-              overflow: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            {specifications.map((spec, index) => (
-              <Box
-                key={index}
                 sx={{
-                  display: "flex",
-                  gap: 2,
-                  alignItems: "flex-start",
-                  p: 2,
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "12px",
-                  border: "1px solid #e9ecef",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
                 }}
               >
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "#374151",
-                      mb: 0.5,
-                    }}
-                  >
-                    Key
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                    value={spec.key}
-                    onChange={(e) =>
-                      handleSpecificationChange(index, "key", e.target.value)
-                    }
-                    placeholder="e.g., Opening Video"
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        fontSize: "14px",
-                        borderRadius: "8px",
-                        backgroundColor: "#fff",
-                      },
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--textFieldBorderColor, #ced4da)",
-                        borderRadius: "8px",
-                      },
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flex: 2 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "#374151",
-                      mb: 0.5,
-                    }}
-                  >
-                    Value
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                    value={spec.value}
-                    onChange={(e) =>
-                      handleSpecificationChange(index, "value", e.target.value)
-                    }
-                    placeholder="e.g., https://youtu.be/3zE_vsiUkDg"
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        fontSize: "14px",
-                        borderRadius: "8px",
-                        backgroundColor: "#fff",
-                      },
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--textFieldBorderColor, #ced4da)",
-                        borderRadius: "8px",
-                      },
-                    }}
-                  />
-                </Box>
-                {specifications.length > 1 && (
-                  <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveSpecification(index)}
-                      sx={{
-                        color: "#dc2626",
-                        "&:hover": {
-                          backgroundColor: "rgba(220, 38, 38, 0.1)",
-                        },
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </IconButton>
-                  </Box>
-                )}
+                Key
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                variant="outlined"
+                value={spec.key}
+                onChange={(e) =>
+                  handleSpecificationChange(index, "key", e.target.value)
+                }
+                placeholder="e.g., Opening Video"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "8px",
+                    backgroundColor: "#fff",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  mb: 0.5,
+                }}
+              >
+                Value
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                variant="outlined"
+                value={spec.value}
+                onChange={(e) =>
+                  handleSpecificationChange(index, "value", e.target.value)
+                }
+                placeholder="e.g., https://youtu.be/3zE_vsiUkDg"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: "14px",
+                    borderRadius: "8px",
+                    backgroundColor: "#fff",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--textFieldBorderColor, #ced4da)",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            </Box>
+            {specifications.length > 1 && (
+              <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleRemoveSpecification(index)}
+                  sx={{
+                    color: "#dc2626",
+                    "&:hover": {
+                      backgroundColor: "rgba(220, 38, 38, 0.1)",
+                    },
+                  }}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
               </Box>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleEditDialogClose}
-            sx={{
-              fontWeight: 600,
-              fontSize: 15,
-              borderRadius: "12px",
-              textTransform: "none",
-              color: "var(--textColor)",
-              border: "1px solid var(--textFieldBorderColor, #ced4da)",
-              padding: "8px 20px",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleEditDialogSave}
-            disabled={isUpdating}
-            sx={{
-              backgroundColor: "var(--purpleShadeBg)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "12px",
-              padding: "8px 24px",
-              fontWeight: 600,
-              fontSize: 15,
-              textTransform: "none",
-              whiteSpace: "nowrap",
-              boxShadow: "none",
-              "&:hover": {
-                backgroundColor: "var(--purpleShadeBg)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-              },
-            }}
-          >
-            {isUpdating ? (
-              <CircularProgress size={22} sx={{ color: "#fff" }} />
-            ) : (
-              "Update Specifications"
             )}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  </DialogContent>
+  
+  <DialogActions sx={{ px: 3, pb: 2, flexShrink: 0, borderTop: '1px solid #e0e0e0' }}>
+    <Button
+      onClick={handleEditDialogClose}
+      sx={{
+        fontWeight: 600,
+        fontSize: 15,
+        borderRadius: "12px",
+        textTransform: "none",
+        color: "var(--textColor)",
+        border: "1px solid var(--textFieldBorderColor, #ced4da)",
+        padding: "8px 20px",
+        "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+      }}
+    >
+      Cancel
+    </Button>
+    <Button
+      onClick={handleEditDialogSave}
+      disabled={isUpdating}
+      sx={{
+        backgroundColor: "var(--purpleShadeBg)",
+        color: "#fff",
+        border: "none",
+        borderRadius: "12px",
+        padding: "8px 24px",
+        fontWeight: 600,
+        fontSize: 15,
+        textTransform: "none",
+        whiteSpace: "nowrap",
+        boxShadow: "none",
+        "&:hover": {
+          backgroundColor: "var(--purpleShadeBg)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+        },
+      }}
+    >
+      {isUpdating ? (
+        <CircularProgress size={22} sx={{ color: "#fff" }} />
+      ) : (
+        "Update Specifications"
+      )}
+    </Button>
+  </DialogActions>
+</Dialog>
 
-      {/* Rest of the dialogs remain the same... */}
       {/* Reviews Dialog */}
       <Dialog
         open={reviewDialogOpen}

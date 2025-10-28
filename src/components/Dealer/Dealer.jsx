@@ -33,6 +33,9 @@ import {
   InputAdornment,
   Divider,
   Autocomplete,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
 } from "@mui/material";
 import { Plus, Edit2, Trash2, User, Users, Eye, Link } from "lucide-react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -69,6 +72,30 @@ const StyledTableContainer = styled(TableContainer)({
     backgroundColor: "var(--hoverBackgroundColor)",
     transition: "background-color 0.3s ease",
   },
+});
+
+const ImageContainer = styled(Box)({
+  width: "100%",
+  height: "200px",
+  border: "2px dashed #ddd",
+  borderRadius: "12px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#f9f9f9",
+  cursor: "pointer",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    borderColor: "var(--purpleShadeBg)",
+    backgroundColor: "#f5f5f5",
+  },
+});
+
+const ImagePreview = styled("img")({
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  borderRadius: "8px",
 });
 
 const Dealer = () => {
@@ -216,7 +243,25 @@ const Dealer = () => {
     }
   };
 
+    const getImageUrl = (fileUrl) => {
+    if (!fileUrl) return null;
+    // Check if the URL already starts with http
+    if (fileUrl.startsWith('http')) {
+      return fileUrl;
+    }
+    // Use the correct environment variable name
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4100';
+    return `${baseUrl}${fileUrl}`;
+  };
+
   const handleOpenViewDetailsDialog = (dealer) => {
+    // console.log('Selected dealer:', dealer);
+    // console.log('Shop Image:', dealer.shopImage);
+    // console.log('Shop Image URL:', getImageUrl(dealer.shopImage));
+    // console.log('Pesticide License:', dealer.pesticideLicenseImage);
+    // console.log('Pesticide License URL:', getImageUrl(dealer.pesticideLicenseImage));
+    // console.log('Fertilizer License:', dealer.fertilizerLicenseImage);
+    // console.log('Fertilizer License URL:', getImageUrl(dealer.fertilizerLicenseImage));
     setSelectedDealer(dealer);
     setOpenViewDetailsDialog(true);
   };
@@ -512,7 +557,7 @@ const Dealer = () => {
       <Dialog
         open={openViewDetailsDialog}
         onClose={handleCloseViewDetailsDialog}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         PaperProps={{
           sx: {
@@ -877,6 +922,148 @@ const Dealer = () => {
                   }}
                 />
               </Grid>
+
+              {/* Images Section - Only show if at least one image exists */}
+              {(selectedDealer.shopImage || selectedDealer.pesticideLicenseImage || selectedDealer.fertilizerLicenseImage) && (
+                <>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--purpleShadeBg)",
+                        mb: 2,
+                      }}
+                    >
+                      Images
+                    </Typography>
+                  </Grid>
+
+                  {/* Shop Image - Only show if exists */}
+                  {selectedDealer.shopImage && (
+                    <Grid item xs={12} md={4}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 1,
+                        }}
+                      >
+                        Shop Image
+                      </Typography>
+                      <ImageContainer
+                        onClick={() => {
+                          const imageUrl = getImageUrl(selectedDealer.shopImage);
+                          if (imageUrl) window.open(imageUrl, '_blank');
+                        }}
+                      >
+                        <ImagePreview 
+                          src={getImageUrl(selectedDealer.shopImage)}
+                          alt="Shop Image"
+                          onError={(e) => {
+                            console.error('Failed to load shop image:', e.target.src);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                          onLoad={() => {
+                            console.log('Shop image loaded successfully');
+                          }}
+                        />
+                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                          <Typography variant="body2" color="#666">
+                            Image not found
+                          </Typography>
+                        </Box>
+                      </ImageContainer>
+                    </Grid>
+                  )}
+
+                  {/* Pesticide License Image - Only show if exists */}
+                  {selectedDealer.pesticideLicenseImage && (
+                    <Grid item xs={12} md={4}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 1,
+                        }}
+                      >
+                        Pesticide License Image
+                      </Typography>
+                      <ImageContainer
+                        onClick={() => {
+                          const imageUrl = getImageUrl(selectedDealer.pesticideLicenseImage);
+                          if (imageUrl) window.open(imageUrl, '_blank');
+                        }}
+                      >
+                        <ImagePreview 
+                          src={getImageUrl(selectedDealer.pesticideLicenseImage)}
+                          alt="Pesticide License"
+                          onError={(e) => {
+                            console.error('Failed to load pesticide license image:', e.target.src);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                          onLoad={() => {
+                            console.log('Pesticide license image loaded successfully');
+                          }}
+                        />
+                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                          <Typography variant="body2" color="#666">
+                            Image not found
+                          </Typography>
+                        </Box>
+                      </ImageContainer>
+                    </Grid>
+                  )}
+
+                  {/* Fertilizer License Image - Only show if exists */}
+                  {selectedDealer.fertilizerLicenseImage && (
+                    <Grid item xs={12} md={4}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 1,
+                        }}
+                      >
+                        Fertilizer License Image
+                      </Typography>
+                      <ImageContainer
+                        onClick={() => {
+                          const imageUrl = getImageUrl(selectedDealer.fertilizerLicenseImage);
+                          if (imageUrl) window.open(imageUrl, '_blank');
+                        }}
+                      >
+                        <ImagePreview 
+                          src={getImageUrl(selectedDealer.fertilizerLicenseImage)}
+                          alt="Fertilizer License"
+                          onError={(e) => {
+                            console.error('Failed to load fertilizer license image:', e.target.src);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                          onLoad={() => {
+                            console.log('Fertilizer license image loaded successfully');
+                          }}
+                        />
+                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                          <Typography variant="body2" color="#666">
+                            Image not found
+                          </Typography>
+                        </Box>
+                      </ImageContainer>
+                    </Grid>
+                  )}
+                </>
+              )}
 
               {/* Dealer Users Section */}
               {selectedDealer.dealerUsers && selectedDealer.dealerUsers.length > 0 && (
