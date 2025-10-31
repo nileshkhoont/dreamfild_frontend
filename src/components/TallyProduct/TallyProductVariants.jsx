@@ -1021,8 +1021,6 @@ const TallyProductVariants = () => {
           )}
         </CardContent>
       </Card>
-
-      // Update the Edit Specification Dialog
 <Dialog
   open={editDialogOpen}
   onClose={handleEditDialogClose}
