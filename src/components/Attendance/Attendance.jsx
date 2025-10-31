@@ -914,7 +914,7 @@ return { presentDays, leaveDays, totalWorkingHours };
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <IconWrapper sx={{ backgroundColor: "var(--redShadeBg)" }}>
-                    <Users2 size={24} color="#ff4d52" />
+                    <Users2 size={24} color="#197743" />
                   </IconWrapper>
                   <Box>
                     <Typography
@@ -963,7 +963,7 @@ return { presentDays, leaveDays, totalWorkingHours };
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <IconWrapper sx={{ backgroundColor: "var(--redShadeBg)" }}>
-                    <Users2 size={24} color="#ff4d52" />
+                    <Users2 size={24} color="#197743" />
                   </IconWrapper>
                   <Box>
                     <Typography

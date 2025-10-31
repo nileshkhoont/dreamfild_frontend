@@ -157,7 +157,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   justifyContent: "space-between",
   minHeight: "64px !important",
   backgroundColor: "#ffffff",
-  color: "#191919",
+  color: "#75c174",
   transition: "all 0.3s ease-in-out", // Add smooth transition
   [theme.breakpoints.down("md")]: {
     padding: theme.spacing(0, 0.5),
@@ -836,6 +836,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
         flexDirection: "column",
         height: "100%",
         justifyContent: "space-between",
+        
       }}
     >
       <Box>
@@ -846,13 +847,11 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
               navigate("/dashboard");
               if (isMobile) setMobileOpen(false);
             }}
-          >
-            {!collapsed && (
+          > 
               <>
-                {loggedInUser?.organization?.logo ? (
-                  <Box
+             <Box
                     sx={{
-                      maxWidth: { xs: 120, sm: 130, md: 150 },
+                      maxWidth: { xs: 15, sm: 25, md: 25 },  
                       maxHeight: 32,
                       display: "flex",
                       alignItems: "center",
@@ -860,8 +859,8 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
                     }}
                   >
                     <img
-                      src={loggedInUser.organization.logo}
-                      alt={organizationName}
+                      src={"/public/favicon.ico"}
+                      alt={"Crypto"}
                       style={{
                         maxWidth: "100%",
                         maxHeight: "100%",
@@ -869,29 +868,21 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
                       }}
                     />
                   </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontFamily: "DM Sans, sans-serif",
-                        fontWeight: 700,
-                        color: "#191919",
-                        fontSize: { xs: "0.9rem", sm: "1rem", md: "1.1rem" },
-                        textAlign: "left",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        cursor: "pointer",
-                        ml: 1.5,
-                      }}
-                    >
-                      {organizationName}
-                    </Typography>
-                  </Box>
+                {!collapsed && (
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      ml: 1,
+                      fontWeight: 600,
+                      color: "#191919",
+                      whiteSpace: "nowrap",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    {"Crypto"}
+                  </Typography>
                 )}
               </>
-            )}
           </LogoWrapper>
 
           <IconButton
