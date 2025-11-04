@@ -666,57 +666,7 @@ export const apiSlice = createApi({
       invalidatesTags: ["TallyProducts"],
     }),
 
-    // Product Review APIs
-    getProductReviews: builder.query({
-      query: (productId) => ({
-        url: `/product-review/get-by-product/${productId}`,
-        method: "GET",
-      }),
-      providesTags: (result, error, productId) => [
-        { type: "ProductReviews", id: productId },
-        "ProductReviews",
-      ],
-    }),
-
-    addProductReview: builder.mutation({
-      query: ({ productId, rating, comment }) => ({
-        url: "/product-review",
-        method: "POST",
-        body: { productId, rating, comment },
-      }),
-      invalidatesTags: (result, error, { productId }) => [
-        { type: "ProductReviews", id: productId },
-        "ProductReviews",
-      ],
-    }),
-
-    updateProductReview: builder.mutation({
-      query: ({ id, rating, comment, productId }) => ({
-        url: `/product-review/${id}`,
-        method: "PUT",
-        body: { rating, comment, productId },
-      }),
-      invalidatesTags: (result, error, { productId }) => [
-        { type: "ProductReviews", id: productId },
-        "ProductReviews",
-      ],
-    }),
-
-    deleteProductReview: builder.mutation({
-      query: (id) => ({
-        url: `/product-review/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["ProductReviews"],
-    }),
-
-    getAllProductReviews: builder.query({
-      query: () => ({
-        url: "/product-review",
-        method: "GET",
-      }),
-      providesTags: ["ProductReviews"],
-    }),
+   
 
     // Add these new endpoints in the endpoints section
     getTallyLedgers: builder.query({
@@ -810,12 +760,7 @@ export const {
   useGetTallyProductsQuery,
   useUpdateTallyProductMutation,
 
-  // Product Review hooks
-  useGetProductReviewsQuery,
-  useAddProductReviewMutation,
-  useUpdateProductReviewMutation,
-  useDeleteProductReviewMutation,
-  useGetAllProductReviewsQuery,
+
 
   // Add these missing exports
   useGetTallyLedgersQuery,

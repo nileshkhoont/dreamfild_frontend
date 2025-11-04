@@ -16,43 +16,31 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Tooltip,
   Chip,
   Snackbar,
   Alert,
-  InputAdornment,
-  Rating,
   Divider,
-  List,
-  ListItem,
-  Avatar,
-  Menu,
-  MenuItem,
+  Rating,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Package,
   Edit2,
-  Star,
-  MessageSquare,
-  User,
-  MoreVertical,
-  Trash2,
   ArrowLeft,
   Tag,
   DollarSign,
   Plus,
   Upload,
   X,
-  Image as ImageIcon,
+  Trash2,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useUpdateTallyProductMutation,
-  useGetProductReviewsQuery,
-  useAddProductReviewMutation,
-  useUpdateProductReviewMutation,
-  useDeleteProductReviewMutation,
 } from "../../apiService";
 
 const Container = styled(Box)({
@@ -80,6 +68,21 @@ const SpecificationItem = styled(Box)({
   gap: "4px",
   marginBottom: "8px",
   padding: "8px 12px",
+  backgroundColor: "#ffffff",
+  borderRadius: "8px",
+  border: "1px solid #e5e7eb",
+  "&:hover": {
+    borderColor: "var(--purpleShadeBg)",
+    backgroundColor: "#fafafa",
+  },
+});
+
+const ReviewItem = styled(Box)({
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  marginBottom: "12px",
+  padding: "12px 16px",
   backgroundColor: "#ffffff",
   borderRadius: "8px",
   border: "1px solid #e5e7eb",
@@ -155,59 +158,46 @@ const RemoveImageButton = styled(IconButton)({
   },
 });
 
+// Custom Tab Panel component
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+    </div>
+  );
+}
+
 const TallyProductVariants = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Add state for productData so we can update it
   const [productData, setProductData] = useState(location.state?.productData);
-
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [addReviewDialogOpen, setAddReviewDialogOpen] = useState(false);
-  const [editReviewDialogOpen, setEditReviewDialogOpen] = useState(false);
-  const [deleteReviewDialogOpen, setDeleteReviewDialogOpen] = useState(false);
   const [specifications, setSpecifications] = useState([{ key: "", value: "" }]);
-  const [newReview, setNewReview] = useState({
-    rating: 0,
-    comment: "",
-  });
-  const [editingReview, setEditingReview] = useState(null);
-  const [deletingReview, setDeletingReview] = useState(null);
-  const [reviewMenuAnchor, setReviewMenuAnchor] = useState(null);
-  const [selectedReview, setSelectedReview] = useState(null);
+  const [reviews, setReviews] = useState([{ rating: 5, comment: "" }]);
+  const [tabValue, setTabValue] = useState(0);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  // ADD THESE MISSING STATE VARIABLES FOR IMAGE HANDLING
+  // State variables for image handling
   const [selectedImages, setSelectedImages] = useState([]);
   const [dragOver, setDragOver] = useState(false);
 
   const [updateTallyProduct, { isLoading: isUpdating }] =
     useUpdateTallyProductMutation();
-  const [addProductReview, { isLoading: isAddingReview }] =
-    useAddProductReviewMutation();
-  const [updateProductReview, { isLoading: isUpdatingReview }] =
-    useUpdateProductReviewMutation();
-  const [deleteProductReview, { isLoading: isDeletingReview }] =
-    useDeleteProductReviewMutation();
 
-  const {
-    data: reviewsData,
-    isLoading: isLoadingReviews,
-    refetch: refetchReviews,
-  } = useGetProductReviewsQuery(selectedProduct?.id, {
-    skip: !selectedProduct?.id || !reviewDialogOpen,
-  });
-
-  const reviews = reviewsData?.data || [];
-
-  // ADD THESE MISSING IMAGE HANDLING FUNCTIONS
+  // Image handling functions
   const handleImageSelect = (event) => {
     const files = Array.from(event.target.files);
     handleFiles(files);
@@ -290,20 +280,34 @@ const TallyProductVariants = () => {
     }
   };
 
+  // Review handling functions
+  const handleReviewChange = (index, field, value) => {
+    const newReviews = [...reviews];
+    newReviews[index][field] = value;
+    setReviews(newReviews);
+  };
+
+  const handleAddReview = () => {
+    setReviews([...reviews, { rating: 5, comment: "" }]);
+  };
+
+  const handleRemoveReview = (index) => {
+    if (reviews.length > 1) {
+      const newReviews = reviews.filter((_, i) => i !== index);
+      setReviews(newReviews);
+    }
+  };
+
   const handleEditSpec = (variant) => {
     try {
+      // Handle specifications
       let specString = variant.productSpecification;
       
-      // Fix common JSON formatting issues
       if (specString) {
-        // Remove any surrounding quotes and braces if they exist
         specString = specString.replace(/^['"`{]*|[}'"`]*$/g, '');
-        
-        // Fix missing comma before "description"
         specString = specString.replace(/"Warning Video"\s*:\s*"[^"]*"\s*"description"/, 
           '"Warning Video" : "https://youtu.be/XTY1_4RFxss?si=fkdObTRoLMmy4tpF", "description"');
         
-        // Ensure it's wrapped in proper braces
         if (!specString.startsWith('{')) {
           specString = '{' + specString;
         }
@@ -313,7 +317,6 @@ const TallyProductVariants = () => {
       }
       
       const existingSpecs = specString ? JSON.parse(specString) : {};
-      
       const specsArray = Object.entries(existingSpecs).map(([key, value]) => ({
         key,
         value: String(value)
@@ -322,10 +325,7 @@ const TallyProductVariants = () => {
       setSpecifications(specsArray.length > 0 ? specsArray : [{ key: "", value: "" }]);
     } catch (error) {
       console.error('Error parsing specifications:', error);
-      // If JSON parsing fails, try to extract key-value pairs manually
       const specString = variant.productSpecification || "";
-      
-      // Try to extract key-value pairs using regex
       const matches = specString.match(/"([^"]+)"\s*:\s*"([^"]+)"/g) || [];
       const specsArray = matches.map(match => {
         const [, key, value] = match.match(/"([^"]+)"\s*:\s*"([^"]+)"/);
@@ -336,53 +336,47 @@ const TallyProductVariants = () => {
         { key: "Description", value: specString }
       ]);
     }
+
+    // Handle reviews
+    try {
+      let reviewString = variant.productReview;
+      let existingReviews = [];
+      
+      if (reviewString) {
+        existingReviews = JSON.parse(reviewString);
+        if (!Array.isArray(existingReviews)) {
+          existingReviews = [];
+        }
+      }
+      
+      const reviewsArray = existingReviews.map(review => ({
+        rating: review.rating || 5,
+        comment: review.comment || ""
+      }));
+      
+      setReviews(reviewsArray.length > 0 ? reviewsArray : [{ rating: 5, comment: "" }]);
+    } catch (error) {
+      console.error('Error parsing reviews:', error);
+      setReviews([{ rating: 5, comment: "" }]);
+    }
+    
     setSelectedProduct(variant);
     setEditDialogOpen(true);
-  };
-
-  const handleViewReviews = (variant) => {
-    setSelectedProduct(variant);
-    setReviewDialogOpen(true);
   };
 
   const handleEditDialogClose = () => {
     setEditDialogOpen(false);
     setSelectedProduct(null);
     setSpecifications([{ key: "", value: "" }]);
-    setSelectedImages([]); // Clear images
-  };
-
-  const handleReviewDialogClose = () => {
-    setReviewDialogOpen(false);
-    setSelectedProduct(null);
-  };
-
-  const handleAddReviewDialogClose = () => {
-    setAddReviewDialogOpen(false);
-    setNewReview({ rating: 0, comment: "" });
-  };
-
-  const handleEditReviewDialogClose = () => {
-    setEditReviewDialogOpen(false);
-    setEditingReview(null);
-  };
-
-  const handleDeleteReviewDialogClose = () => {
-    setDeleteReviewDialogOpen(false);
-    setDeletingReview(null);
-  };
-
-  const handleReviewMenuClose = () => {
-    setReviewMenuAnchor(null);
-    setSelectedReview(null);
+    setReviews([{ rating: 5, comment: "" }]);
+    setSelectedImages([]);
+    setTabValue(0);
   };
 
   const handleEditDialogSave = async () => {
     try {
-      // Create FormData for multipart/form-data
       const formData = new FormData();
       
-      // Add product ID
       formData.append('id', selectedProduct.id);
       
       // Add specifications
@@ -399,12 +393,19 @@ const TallyProductVariants = () => {
       
       formData.append('productSpecification', specsString);
       
+      // Add reviews
+      const reviewsArray = reviews.filter(review => review.comment.trim());
+      const reviewsString = reviewsArray.length > 0 
+        ? JSON.stringify(reviewsArray) 
+        : "";
+      
+      formData.append('productReview', reviewsString);
+      
       // Add images
-      selectedImages.forEach((imageObj, index) => {
+      selectedImages.forEach((imageObj) => {
         formData.append(`images`, imageObj.file);
       });
 
-      // Call the API with FormData
       await updateTallyProduct(formData).unwrap();
 
       // Update local productData state
@@ -412,117 +413,28 @@ const TallyProductVariants = () => {
         ...prevData,
         variants: prevData.variants.map(variant => 
           variant.id === selectedProduct.id 
-            ? { ...variant, productSpecification: specsString }
+            ? { 
+                ...variant, 
+                productSpecification: specsString,
+                productReview: reviewsString
+              }
             : variant
         )
       }));
 
       setSnackbar({
         open: true,
-        message: "Specification and images updated successfully!",
+        message: "Product updated successfully!",
         severity: "success",
       });
       handleEditDialogClose();
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error?.data?.message || "Failed to update specification",
+        message: error?.data?.message || "Failed to update product",
         severity: "error",
       });
     }
-  };
-
-  const handleAddReview = () => {
-    setAddReviewDialogOpen(true);
-  };
-
-  const handleSubmitReview = async () => {
-    try {
-      await addProductReview({
-        productId: selectedProduct.id,
-        rating: newReview.rating,
-        comment: newReview.comment,
-      }).unwrap();
-      setSnackbar({
-        open: true,
-        message: "Review added successfully!",
-        severity: "success",
-      });
-      handleAddReviewDialogClose();
-      refetchReviews();
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error?.data?.message || "Failed to add review",
-        severity: "error",
-      });
-    }
-  };
-
-  const handleEditReview = (review) => {
-    setEditingReview({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment,
-      productId: selectedProduct.id,
-    });
-    setEditReviewDialogOpen(true);
-    handleReviewMenuClose();
-  };
-
-  const handleSubmitEditReview = async () => {
-    try {
-      await updateProductReview(editingReview).unwrap();
-      setSnackbar({
-        open: true,
-        message: "Review updated successfully!",
-        severity: "success",
-      });
-      handleEditReviewDialogClose();
-      refetchReviews();
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error?.data?.message || "Failed to update review",
-        severity: "error",
-      });
-    }
-  };
-
-  const handleDeleteReview = (review) => {
-    setDeletingReview(review);
-    setDeleteReviewDialogOpen(true);
-    handleReviewMenuClose();
-  };
-
-  const handleConfirmDeleteReview = async () => {
-    try {
-      await deleteProductReview(deletingReview.id).unwrap();
-      setSnackbar({
-        open: true,
-        message: "Review deleted successfully!",
-        severity: "success",
-      });
-      handleDeleteReviewDialogClose();
-      refetchReviews();
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error?.data?.message || "Failed to delete review",
-        severity: "error",
-      });
-    }
-  };
-
-  const handleReviewMenuClick = (event, review) => {
-    setReviewMenuAnchor(event.currentTarget);
-    setSelectedReview(review);
-  };
-
-  const getAverageRating = (reviews) => {
-    if (!reviews || reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
-    return (sum / reviews.length).toFixed(1);
   };
 
   const displaySpecifications = (specString) => {
@@ -630,33 +542,6 @@ const TallyProductVariants = () => {
         </Box>
       )} catch (error) {
         console.error('Error parsing specifications:', error);
-        
-        // Try to extract and display as raw text with better formatting
-        const lines = specString.split(/[,;]/).filter(line => line.trim());
-        
-        if (lines.length > 1) {
-          return (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              {lines.map((line, index) => (
-                <Typography 
-                  key={index}
-                  variant="body2" 
-                  sx={{ 
-                    color: "#374151",
-                    fontSize: "12px",
-                    padding: "4px 8px",
-                    backgroundColor: "#f9fafb",
-                    borderRadius: "4px",
-                    borderLeft: "3px solid var(--purpleShadeBg)"
-                  }}
-                >
-                  {line.trim()}
-                </Typography>
-              ))}
-            </Box>
-          );
-        }
-        
         return (
           <Typography 
             variant="body2" 
@@ -675,6 +560,85 @@ const TallyProductVariants = () => {
         );
       }
     };
+
+  const displayReviews = (reviewString) => {
+    if (!reviewString) return (
+      <Typography variant="body2" sx={{ color: "#999", fontStyle: "italic" }}>
+        No reviews available
+      </Typography>
+    );
+    
+    try {
+      const reviews = JSON.parse(reviewString);
+      
+      if (!Array.isArray(reviews) || reviews.length === 0) {
+        return (
+          <Typography variant="body2" sx={{ color: "#999", fontStyle: "italic" }}>
+            No reviews available
+          </Typography>
+        );
+      }
+      
+      return (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {reviews.map((review, index) => (
+            <ReviewItem key={index}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                <Rating
+                  value={review.rating || 0}
+                  readOnly
+                  size="small"
+                  sx={{
+                    "& .MuiRating-iconFilled": {
+                      color: "#fbbf24",
+                    },
+                  }}
+                />
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: "#666",
+                    fontWeight: 500,
+                  }}
+                >
+                  ({review.rating || 0}/5)
+                </Typography>
+              </Box>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: "#374151",
+                  fontSize: "13px",
+                  lineHeight: 1.4,
+                  wordBreak: "break-word"
+                }}
+              >
+                {review.comment}
+              </Typography>
+            </ReviewItem>
+          ))}
+        </Box>
+      );
+    } catch (error) {
+      console.error('Error parsing reviews:', error);
+      return (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: "#374151",
+            fontSize: "12px",
+            padding: "8px 12px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "6px",
+            border: "1px solid #e5e7eb",
+            wordBreak: "break-word"
+          }}
+        >
+          {reviewString}
+        </Typography>
+      );
+    }
+  };
 
   return (
     <Container>
@@ -776,8 +740,6 @@ const TallyProductVariants = () => {
               {productData.variants?.map((variant) => (
                 <Grid item xs={12} sm={6} md={4} key={variant.id}>
                   <VariantCard elevation={1}>
-                    
-
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                         {variant.productName}
@@ -812,6 +774,7 @@ const TallyProductVariants = () => {
                       </Box>
                     </Box>
 
+                    {/* Product Specifications */}
                     {variant.productSpecification && (
                       <Box sx={{ mb: 2 }}>
                         <Box sx={{ 
@@ -868,6 +831,58 @@ const TallyProductVariants = () => {
                         </Box>
                       </Box>
                     )}
+
+                    {/* Product Reviews */}
+                    {variant.productReview && (
+                      <Box sx={{ mb: 2 }}>
+                        <Box sx={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: 1, 
+                          mb: 1.5 
+                        }}>
+                          <Star size={16} color="var(--purpleShadeBg)" />
+                          <Typography
+                            variant="body2"
+                            sx={{ 
+                              color: "#374151", 
+                              fontWeight: 600, 
+                              fontSize: "13px",
+                              letterSpacing: "0.3px"
+                            }}
+                          >
+                            Product Reviews
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            maxHeight: 160,
+                            overflow: "auto",
+                            p: 1.5,
+                            backgroundColor: "#fafbfc",
+                            borderRadius: "10px",
+                            border: "1px solid #e1e5e9",
+                            "&::-webkit-scrollbar": {
+                              width: "4px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              backgroundColor: "#f1f3f4",
+                              borderRadius: "2px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              backgroundColor: "#c1c7cd",
+                              borderRadius: "2px",
+                              "&:hover": {
+                                backgroundColor: "#a8b1ba",
+                              },
+                            },
+                          }}
+                        >
+                          {displayReviews(variant.productReview)}
+                        </Box>
+                      </Box>
+                    )}
+
                     {/* Product Images Section */}
                     {variant.images && variant.images.length > 0 && (
                       <Box sx={{ mb: 2 }}>
@@ -912,7 +927,6 @@ const TallyProductVariants = () => {
                                 },
                               }}
                               onClick={() => {
-                                // Optional: Open image in modal or new tab
                                 window.open(`${import.meta.env.VITE_BACKEND_URL}${image.imageUrl}`, '_blank');
                               }}
                             >
@@ -925,7 +939,6 @@ const TallyProductVariants = () => {
                                   objectFit: "cover",
                                 }}
                                 onError={(e) => {
-                                  // Fallback in case image fails to load
                                   e.target.style.display = 'none';
                                   e.target.parentNode.innerHTML = `
                                     <div style="
@@ -968,13 +981,7 @@ const TallyProductVariants = () => {
 
                     <Divider sx={{ my: 2 }} />
 
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        justifyContent: "space-between",
-                      }}
-                    >
+                    <Box sx={{ display: "flex", justifyContent: "center" }}>
                       <Button
                         size="small"
                         startIcon={<Edit2 size={14} />}
@@ -992,26 +999,7 @@ const TallyProductVariants = () => {
                         }}
                         variant="outlined"
                       >
-                        Edit Spec
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<MessageSquare size={14} />}
-                        onClick={() => handleViewReviews(variant)}
-                        sx={{
-                          color: "#f59e0b",
-                          borderColor: "#f59e0b",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          textTransform: "none",
-                          flex: 1,
-                          "&:hover": {
-                            backgroundColor: "rgba(245, 158, 11, 0.1)",
-                          },
-                        }}
-                        variant="outlined"
-                      >
-                        Reviews
+                        Edit Product
                       </Button>
                     </Box>
                   </VariantCard>
@@ -1021,388 +1009,23 @@ const TallyProductVariants = () => {
           )}
         </CardContent>
       </Card>
-<Dialog
-  open={editDialogOpen}
-  onClose={handleEditDialogClose}
-  maxWidth="lg"
-  fullWidth
-  PaperProps={{
-    sx: {
-      height: '95vh', // Increase height
-      maxHeight: '95vh',
-      borderRadius: 4,
-      boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
-      background: "#fff",
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden', // Prevent dialog overflow
-    },
-  }}
->
-  <DialogTitle
-    sx={{
-      fontWeight: 700,
-      fontSize: 22,
-      color: "var(--purpleShadeBg)",
-      pb: 1,
-      display: "flex",
-      alignItems: "center",
-      gap: 1.2,
-      flexShrink: 0,
-      borderBottom: '1px solid #e0e0e0', // Add border for visual separation
-    }}
-  >
-    <Edit2 size={22} />
-    Edit Product Specifications
-    <IconButton
-      onClick={handleEditDialogClose}
-      size="small"
-      sx={{ ml: "auto", color: "inherit" }}
-    >
-      <CloseIcon />
-    </IconButton>
-  </DialogTitle>
-  
-  <DialogContent
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 2, // Reduce gap
-      px: 3,
-      py: 2,
-      background: "rgba(255,255,255,0.95)",
-      flex: 1,
-      overflow: 'hidden', // Prevent content overflow
-      position: 'relative',
-    }}
-  >
-    {/* Scrollable content container */}
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        flex: 1,
-        overflow: 'auto',
-        pr: 1, // Space for scrollbar
-        '&::-webkit-scrollbar': {
-          width: '6px',
-        },
-        '&::-webkit-scrollbar-track': {
-          backgroundColor: '#f1f1f1',
-          borderRadius: '3px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: '#c1c1c1',
-          borderRadius: '3px',
-          '&:hover': {
-            backgroundColor: '#a1a1a1',
-          },
-        },
-      }}
-    >
-      {selectedProduct && (
-        <Box
-          sx={{
-            p: 2,
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            flexShrink: 0,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: "#333" }}
-          >
-            Product: {selectedProduct.productName}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
-            Price: ₹{selectedProduct.price}
-          </Typography>
-        </Box>
-      )}
 
-      {/* Product Images Section */}
-      <Box sx={{ flexShrink: 0 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: "16px",
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            Product Images
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: "12px",
-              color: "#666",
-            }}
-          >
-            {selectedImages.length} image(s) selected
-          </Typography>
-        </Box>
-
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleImageSelect}
-          style={{ display: 'none' }}
-          id="image-upload-input"
-        />
-        
-        <ImageUploadContainer
-          className={dragOver ? 'dragover' : ''}
-          onClick={() => document.getElementById('image-upload-input').click()}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          sx={{
-            minHeight: '120px', // Reduce height
-            padding: '1.5rem',
-          }}
-        >
-          <Upload size={40} color="#ccc" />
-          <Typography variant="h6" sx={{ mt: 1, mb: 0.5, color: "#666", fontSize: '16px' }}>
-            Upload Product Images
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#999", fontSize: '12px' }}>
-            Drag and drop images here or click to browse
-          </Typography>
-          <Typography variant="caption" sx={{ color: "#999", mt: 0.5, display: "block", fontSize: '10px' }}>
-            Supports: JPG, PNG, GIF (Max 5MB per image)
-          </Typography>
-        </ImageUploadContainer>
-
-        {selectedImages.length > 0 && (
-          <ImagePreviewContainer sx={{ mt: 1 }}>
-            {selectedImages.map((imageObj) => (
-              <ImagePreviewItem key={imageObj.id} sx={{ width: '80px', height: '80px' }}>
-                <img src={imageObj.preview} alt="Preview" />
-                <RemoveImageButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeImage(imageObj.id);
-                  }}
-                  sx={{ width: '20px', height: '20px', top: '2px', right: '2px' }}
-                >
-                  <X size={12} />
-                </RemoveImageButton>
-              </ImagePreviewItem>
-            ))}
-          </ImagePreviewContainer>
-        )}
-      </Box>
-
-      <Divider sx={{ flexShrink: 0, my: 1 }} />
-
-      {/* Product Specifications Section */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontSize: "16px",
-            fontWeight: 600,
-            color: "#374151",
-          }}
-        >
-          Product Specifications
-        </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Plus size={16} />}
-          onClick={handleAddSpecification}
-          sx={{
-            color: "var(--purpleShadeBg)",
-            borderColor: "var(--purpleShadeBg)",
-            borderRadius: "8px",
-            fontSize: "12px",
-            textTransform: "none",
-            "&:hover": {
-              backgroundColor: "rgba(80, 60, 180, 0.1)",
-            },
-          }}
-        >
-          Add Field
-        </Button>
-      </Box>
-
-      {/* Specifications List */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          flexShrink: 0, // Don't shrink
-          minHeight: 'auto', // Allow natural height
-        }}
-      >
-        {specifications.map((spec, index) => (
-          <Box
-            key={index}
-            sx={{
-              display: "flex",
-              gap: 2,
-              alignItems: "flex-start",
-              p: 2,
-              backgroundColor: "#f8f9fa",
-              borderRadius: "12px",
-              border: "1px solid #e9ecef",
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 0.5,
-                }}
-              >
-                Key
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                variant="outlined"
-                value={spec.key}
-                onChange={(e) =>
-                  handleSpecificationChange(index, "key", e.target.value)
-                }
-                placeholder="e.g., Opening Video"
-                sx={{
-                  "& .MuiInputBase-root": {
-                    fontSize: "14px",
-                    borderRadius: "8px",
-                    backgroundColor: "#fff",
-                  },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--textFieldBorderColor, #ced4da)",
-                    borderRadius: "8px",
-                  },
-                }}
-              />
-            </Box>
-            <Box sx={{ flex: 2 }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 0.5,
-                }}
-              >
-                Value
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                variant="outlined"
-                value={spec.value}
-                onChange={(e) =>
-                  handleSpecificationChange(index, "value", e.target.value)
-                }
-                placeholder="e.g., https://youtu.be/3zE_vsiUkDg"
-                sx={{
-                  "& .MuiInputBase-root": {
-                    fontSize: "14px",
-                    borderRadius: "8px",
-                    backgroundColor: "#fff",
-                  },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--textFieldBorderColor, #ced4da)",
-                    borderRadius: "8px",
-                  },
-                }}
-              />
-            </Box>
-            {specifications.length > 1 && (
-              <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemoveSpecification(index)}
-                  sx={{
-                    color: "#dc2626",
-                    "&:hover": {
-                      backgroundColor: "rgba(220, 38, 38, 0.1)",
-                    },
-                  }}
-                >
-                  <Trash2 size={16} />
-                </IconButton>
-              </Box>
-            )}
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  </DialogContent>
-  
-  <DialogActions sx={{ px: 3, pb: 2, flexShrink: 0, borderTop: '1px solid #e0e0e0' }}>
-    <Button
-      onClick={handleEditDialogClose}
-      sx={{
-        fontWeight: 600,
-        fontSize: 15,
-        borderRadius: "12px",
-        textTransform: "none",
-        color: "var(--textColor)",
-        border: "1px solid var(--textFieldBorderColor, #ced4da)",
-        padding: "8px 20px",
-        "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
-      }}
-    >
-      Cancel
-    </Button>
-    <Button
-      onClick={handleEditDialogSave}
-      disabled={isUpdating}
-      sx={{
-        backgroundColor: "var(--purpleShadeBg)",
-        color: "#fff",
-        border: "none",
-        borderRadius: "12px",
-        padding: "8px 24px",
-        fontWeight: 600,
-        fontSize: 15,
-        textTransform: "none",
-        whiteSpace: "nowrap",
-        boxShadow: "none",
-        "&:hover": {
-          backgroundColor: "var(--purpleShadeBg)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-        },
-      }}
-    >
-      {isUpdating ? (
-        <CircularProgress size={22} sx={{ color: "#fff" }} />
-      ) : (
-        "Update Specifications"
-      )}
-    </Button>
-  </DialogActions>
-</Dialog>
-
-      {/* Reviews Dialog */}
+      {/* Edit Product Dialog with Tabs */}
       <Dialog
-        open={reviewDialogOpen}
-        onClose={handleReviewDialogClose}
-        maxWidth="md"
+        open={editDialogOpen}
+        onClose={handleEditDialogClose}
+        maxWidth="lg"
         fullWidth
         PaperProps={{
           sx: {
-            minHeight: 500,
+            height: '95vh',
+            maxHeight: '95vh',
             borderRadius: 4,
             boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
             background: "#fff",
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           },
         }}
       >
@@ -1415,307 +1038,449 @@ const TallyProductVariants = () => {
             display: "flex",
             alignItems: "center",
             gap: 1.2,
+            flexShrink: 0,
+            borderBottom: '1px solid #e0e0e0',
           }}
         >
-          <Star size={22} />
-          Product Reviews
+          <Edit2 size={22} />
+          Edit Product Details
           <IconButton
-            onClick={handleReviewDialogClose}
+            onClick={handleEditDialogClose}
             size="small"
             sx={{ ml: "auto", color: "inherit" }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2 }}>
+        
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+            px: 0,
+            py: 0,
+            background: "rgba(255,255,255,0.95)",
+            flex: 1,
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
           {selectedProduct && (
             <Box
               sx={{
-                mb: 3,
-                p: 2,
+                p: 3,
                 backgroundColor: "#f9f9f9",
-                borderRadius: "8px",
+                borderBottom: '1px solid #e0e0e0',
+                flexShrink: 0,
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
-                {selectedProduct.productName}
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, color: "#333" }}
+              >
+                Product: {selectedProduct.productName}
               </Typography>
               <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
                 Price: ₹{selectedProduct.price}
               </Typography>
-              {reviews.length > 0 && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mt: 1,
-                  }}
-                >
-                  <Rating
-                    value={parseFloat(getAverageRating(reviews))}
-                    readOnly
-                    precision={0.1}
-                  />
-                  <Typography variant="body2" sx={{ color: "#666" }}>
-                    {getAverageRating(reviews)} (
-                    {reviews.length} review{reviews.length !== 1 ? "s" : ""})
-                  </Typography>
-                </Box>
-              )}
             </Box>
           )}
+
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, flexShrink: 0 }}>
+            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+              <Tab
+                icon={<Upload size={16} />}
+                label="Images"
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontSize: '14px' }}
+              />
+              <Tab
+                icon={<Package size={16} />}
+                label="Specifications"
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontSize: '14px' }}
+              />
+              <Tab
+                icon={<Star size={16} />}
+                label="Reviews"
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontSize: '14px' }}
+              />
+            </Tabs>
+          </Box>
 
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
+              flex: 1,
+              overflow: 'auto',
+              px: 3,
+              py: 2,
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: '#f1f1f1',
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#c1c1c1',
+                borderRadius: '3px',
+                '&:hover': {
+                  backgroundColor: '#a1a1a1',
+                },
+              },
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Customer Reviews
-            </Typography>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<Star size={18} />}
-              onClick={handleAddReview}
-              sx={{
-                backgroundColor: "#f59e0b",
-                color: "white",
-                borderRadius: "12px",
-                fontWeight: 500,
-                fontSize: "14px",
-                textTransform: "none",
-                px: 2,
-                py: 1,
-                boxShadow: "none",
-                "&:hover": {
-                  backgroundColor: "#d97706",
-                  boxShadow: "none",
-                },
-              }}
-            >
-              Add Review
-            </Button>
-          </Box>
+            {/* Images Tab */}
+            <TabPanel value={tabValue} index={0}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#374151",
+                  }}
+                >
+                  Product Images
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "12px",
+                    color: "#666",
+                  }}
+                >
+                  {selectedImages.length} image(s) selected
+                </Typography>
+              </Box>
 
-          <Divider sx={{ mb: 2 }} />
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageSelect}
+                style={{ display: 'none' }}
+                id="image-upload-input"
+              />
+              
+              <ImageUploadContainer
+                className={dragOver ? 'dragover' : ''}
+                onClick={() => document.getElementById('image-upload-input').click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                sx={{
+                  minHeight: '120px',
+                  padding: '1.5rem',
+                }}
+              >
+                <Upload size={40} color="#ccc" />
+                <Typography variant="h6" sx={{ mt: 1, mb: 0.5, color: "#666", fontSize: '16px' }}>
+                  Upload Product Images
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#999", fontSize: '12px' }}>
+                  Drag and drop images here or click to browse
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#999", mt: 0.5, display: "block", fontSize: '10px' }}>
+                  Supports: JPG, PNG, GIF (Max 5MB per image)
+                </Typography>
+              </ImageUploadContainer>
 
-          {isLoadingReviews ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : reviews.length === 0 ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                py: 4,
-                gap: 2,
-              }}
-            >
-              <Star size={48} color="#ccc" />
-              <Typography variant="body1" sx={{ color: "#666" }}>
-                No reviews yet
-              </Typography>
-            </Box>
-          ) : (
-            <List sx={{ maxHeight: 400, overflow: "auto" }}>
-              {reviews.map((review, index) => (
-                <ListItem key={review.id || index} sx={{ px: 0, py: 2 }}>
-                  <Box sx={{ width: "100%" }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
+              {selectedImages.length > 0 && (
+                <ImagePreviewContainer sx={{ mt: 1 }}>
+                  {selectedImages.map((imageObj) => (
+                    <ImagePreviewItem key={imageObj.id} sx={{ width: '80px', height: '80px' }}>
+                      <img src={imageObj.preview} alt="Preview" />
+                      <RemoveImageButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(imageObj.id);
+                        }}
+                        sx={{ width: '20px', height: '20px', top: '2px', right: '2px' }}
+                      >
+                        <X size={12} />
+                      </RemoveImageButton>
+                    </ImagePreviewItem>
+                  ))}
+                </ImagePreviewContainer>
+              )}
+            </TabPanel>
+
+            {/* Specifications Tab */}
+            <TabPanel value={tabValue} index={1}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#374151",
+                  }}
+                >
+                  Product Specifications
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleAddSpecification}
+                  sx={{
+                    color: "var(--purpleShadeBg)",
+                    borderColor: "var(--purpleShadeBg)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "rgba(80, 60, 180, 0.1)",
+                    },
+                  }}
+                >
+                  Add Field
+                </Button>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {specifications.map((spec, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      alignItems: "flex-start",
+                      p: 2,
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "12px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
                         sx={{
-                          width: 40,
-                          height: 40,
-                          bgcolor: "var(--purpleShadeBg)",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 0.5,
                         }}
                       >
-                        <User size={20} />
-                      </Avatar>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          Anonymous User
-                        </Typography>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                          }}
-                        >
-                          <Rating value={review.rating} readOnly size="small" />
-                          <Typography variant="caption" sx={{ color: "#666" }}>
-                            {new Date(review.createdAt || Date.now()).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <IconButton
+                        Key
+                      </Typography>
+                      <TextField
+                        fullWidth
                         size="small"
-                        onClick={(e) => handleReviewMenuClick(e, review)}
+                        variant="outlined"
+                        value={spec.key}
+                        onChange={(e) =>
+                          handleSpecificationChange(index, "key", e.target.value)
+                        }
+                        placeholder="e.g., Opening Video"
                         sx={{
-                          color: "#666",
-                          "&:hover": {
-                            backgroundColor: "rgba(0,0,0,0.04)",
+                          "& .MuiInputBase-root": {
+                            fontSize: "14px",
+                            borderRadius: "8px",
+                            backgroundColor: "#fff",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "var(--textFieldBorderColor, #ced4da)",
+                            borderRadius: "8px",
                           },
                         }}
-                      >
-                        <MoreVertical size={16} />
-                      </IconButton>
+                      />
                     </Box>
-                    {review.comment && (
-                      <Typography variant="body2" sx={{ ml: 6, color: "#333" }}>
-                        {review.comment}
+                    <Box sx={{ flex: 2 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 0.5,
+                        }}
+                      >
+                        Value
                       </Typography>
-                    )}
-                    {index < reviews.length - 1 && (
-                      <Divider sx={{ mt: 2 }} />
+                      <TextField
+                        fullWidth
+                        size="small"
+                        variant="outlined"
+                        value={spec.value}
+                        onChange={(e) =>
+                          handleSpecificationChange(index, "value", e.target.value)
+                        }
+                        placeholder="e.g., https://youtu.be/3zE_vsiUkDg"
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            fontSize: "14px",
+                            borderRadius: "8px",
+                            backgroundColor: "#fff",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "var(--textFieldBorderColor, #ced4da)",
+                            borderRadius: "8px",
+                          },
+                        }}
+                      />
+                    </Box>
+                    {specifications.length > 1 && (
+                      <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveSpecification(index)}
+                          sx={{
+                            color: "#dc2626",
+                            "&:hover": {
+                              backgroundColor: "rgba(220, 38, 38, 0.1)",
+                            },
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </IconButton>
+                      </Box>
                     )}
                   </Box>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-      </Dialog>
+                ))}
+              </Box>
+            </TabPanel>
 
-      {/* Review Actions Menu */}
-      <Menu
-        anchorEl={reviewMenuAnchor}
-        open={Boolean(reviewMenuAnchor)}
-        onClose={handleReviewMenuClose}
-        PaperProps={{
-          sx: {
-            borderRadius: "8px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            minWidth: 120,
-          },
-        }}
-      >
-        <MenuItem onClick={() => handleEditReview(selectedReview)}>
-          <Edit2 size={16} style={{ marginRight: 8 }} />
-          Edit
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleDeleteReview(selectedReview)}
-          sx={{ color: "#dc2626" }}
-        >
-          <Trash2 size={16} style={{ marginRight: 8 }} />
-          Delete
-        </MenuItem>
-      </Menu>
+            {/* Reviews Tab */}
+            <TabPanel value={tabValue} index={2}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#374151",
+                  }}
+                >
+                  Product Reviews
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleAddReview}
+                  sx={{
+                    color: "var(--purpleShadeBg)",
+                    borderColor: "var(--purpleShadeBg)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "rgba(80, 60, 180, 0.1)",
+                    },
+                  }}
+                >
+                  Add Review
+                </Button>
+              </Box>
 
-      {/* Add Review Dialog */}
-      <Dialog
-        open={addReviewDialogOpen}
-        onClose={handleAddReviewDialogClose}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
-            background: "#fff",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 700,
-            fontSize: 22,
-            color: "var(--purpleShadeBg)",
-            pb: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.2,
-          }}
-        >
-          <Star size={22} />
-          Add Review
-          <IconButton
-            onClick={handleAddReviewDialogClose}
-            size="small"
-            sx={{ ml: "auto", color: "inherit" }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 1,
-                }}
-              >
-                Rating
-              </Typography>
-              <Rating
-                value={newReview.rating}
-                onChange={(event, newValue) => {
-                  setNewReview((prev) => ({ ...prev, rating: newValue || 0 }));
-                }}
-                size="large"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 0.5,
-                }}
-              >
-                Comment
-              </Typography>
-              <TextField
-                multiline
-                minRows={4}
-                fullWidth
-                variant="outlined"
-                value={newReview.comment}
-                onChange={(e) =>
-                  setNewReview((prev) => ({ ...prev, comment: e.target.value }))
-                }
-                placeholder="Write your review..."
-                sx={{
-                  "& .MuiInputBase-root": {
-                    fontSize: "14px",
-                    borderRadius: "12px",
-                  },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--textFieldBorderColor, #ced4da)",
-                    borderRadius: "12px",
-                  },
-                }}
-              />
-            </Grid>
-          </Grid>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {reviews.map((review, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      p: 2,
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "12px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            color: "#374151",
+                            mb: 0.5,
+                          }}
+                        >
+                          Rating
+                        </Typography>
+                        <Rating
+                          value={review.rating}
+                          onChange={(e, newValue) =>
+                            handleReviewChange(index, "rating", newValue)
+                          }
+                          sx={{
+                            "& .MuiRating-iconFilled": {
+                              color: "#fbbf24",
+                            },
+                          }}
+                        />
+                      </Box>
+                      {reviews.length > 1 && (
+                        <Box sx={{ display: "flex", alignItems: "flex-end" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveReview(index)}
+                            sx={{
+                              color: "#dc2626",
+                              "&:hover": {
+                                backgroundColor: "rgba(220, 38, 38, 0.1)",
+                              },
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </IconButton>
+                        </Box>
+                      )}
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 0.5,
+                        }}
+                      >
+                        Comment
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        size="small"
+                        variant="outlined"
+                        value={review.comment}
+                        onChange={(e) =>
+                          handleReviewChange(index, "comment", e.target.value)
+                        }
+                        placeholder="Write your review comment..."
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            fontSize: "14px",
+                            borderRadius: "8px",
+                            backgroundColor: "#fff",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "var(--textFieldBorderColor, #ced4da)",
+                            borderRadius: "8px",
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </TabPanel>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        
+        <DialogActions sx={{ px: 3, pb: 2, flexShrink: 0, borderTop: '1px solid #e0e0e0' }}>
           <Button
-            onClick={handleAddReviewDialogClose}
+            onClick={handleEditDialogClose}
             sx={{
               fontWeight: 600,
               fontSize: 15,
@@ -1730,150 +1495,8 @@ const TallyProductVariants = () => {
             Cancel
           </Button>
           <Button
-            onClick={handleSubmitReview}
-            disabled={isAddingReview || newReview.rating === 0}
-            sx={{
-              backgroundColor: "#f59e0b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "12px",
-              padding: "8px 24px",
-              fontWeight: 600,
-              fontSize: 15,
-              textTransform: "none",
-              whiteSpace: "nowrap",
-              boxShadow: "none",
-              "&:hover": {
-                backgroundColor: "#d97706",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-              },
-              "&:disabled": {
-                backgroundColor: "#ccc",
-                color: "#666",
-              },
-            }}
-          >
-            {isAddingReview ? (
-              <CircularProgress size={22} sx={{ color: "#fff" }} />
-            ) : (
-              "Submit Review"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Review Dialog */}
-      <Dialog
-        open={editReviewDialogOpen}
-        onClose={handleEditReviewDialogClose}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: "0 8px 32px rgba(80, 60, 180, 0.15)",
-            background: "#fff",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 700,
-            fontSize: 22,
-            color: "var(--purpleShadeBg)",
-            pb: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.2,
-          }}
-        >
-          <Edit2 size={22} />
-          Edit Review
-          <IconButton
-            onClick={handleEditReviewDialogClose}
-            size="small"
-            sx={{ ml: "auto", color: "inherit" }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 1,
-                }}
-              >
-                Rating
-              </Typography>
-              <Rating
-                value={editingReview?.rating || 0}
-                onChange={(event, newValue) => {
-                  setEditingReview((prev) => ({ ...prev, rating: newValue || 0 }));
-                }}
-                size="large"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#374151",
-                  mb: 0.5,
-                }}
-              >
-                Comment
-              </Typography>
-              <TextField
-                multiline
-                minRows={4}
-                fullWidth
-                variant="outlined"
-                value={editingReview?.comment || ""}
-                onChange={(e) =>
-                  setEditingReview((prev) => ({ ...prev, comment: e.target.value }))
-                }
-                placeholder="Write your review..."
-                sx={{
-                  "& .MuiInputBase-root": {
-                    fontSize: "14px",
-                    borderRadius: "12px",
-                  },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--textFieldBorderColor, #ced4da)",
-                    borderRadius: "12px",
-                  },
-                }}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleEditReviewDialogClose}
-            sx={{
-              fontWeight: 600,
-              fontSize: 15,
-              borderRadius: "12px",
-              textTransform: "none",
-              color: "var(--textColor)",
-              border: "1px solid var(--textFieldBorderColor, #ced4da)",
-              padding: "8px 20px",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmitEditReview}
-            disabled={isUpdatingReview || !editingReview?.rating}
+            onClick={handleEditDialogSave}
+            disabled={isUpdating}
             sx={{
               backgroundColor: "var(--purpleShadeBg)",
               color: "#fff",
@@ -1889,133 +1512,12 @@ const TallyProductVariants = () => {
                 backgroundColor: "var(--purpleShadeBg)",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
               },
-              "&:disabled": {
-                backgroundColor: "#ccc",
-                color: "#666",
-              },
             }}
           >
-            {isUpdatingReview ? (
+            {isUpdating ? (
               <CircularProgress size={22} sx={{ color: "#fff" }} />
             ) : (
-              "Update Review"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Review Confirmation Dialog */}
-      <Dialog
-        open={deleteReviewDialogOpen}
-        onClose={handleDeleteReviewDialogClose}
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: "0 8px 32px rgba(220, 38, 38, 0.15)",
-            background: "#fff",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 700,
-            fontSize: 22,
-            color: "#dc2626",
-            pb: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.2,
-          }}
-        >
-          <Trash2 size={22} />
-          Delete Review
-          <IconButton
-            onClick={handleDeleteReviewDialogClose}
-            size="small"
-            sx={{ ml: "auto", color: "inherit" }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2 }}>
-          <Typography variant="body1" sx={{ color: "#374151", mb: 2 }}>
-            Are you sure you want to delete this review? This action cannot be
-            undone.
-          </Typography>
-          {deletingReview && (
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: "#f9f9f9",
-                borderRadius: "8px",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mb: 1,
-                }}
-              >
-                <Rating value={deletingReview.rating} readOnly size="small" />
-                <Typography variant="body2" sx={{ color: "#666" }}>
-                  {new Date(deletingReview.createdAt || Date.now()).toLocaleDateString()}
-                </Typography>
-              </Box>
-              {deletingReview.comment && (
-                <Typography variant="body2" sx={{ color: "#333" }}>
-                  "{deletingReview.comment}"
-                </Typography>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleDeleteReviewDialogClose}
-            sx={{
-              fontWeight: 600,
-              fontSize: 15,
-              borderRadius: "12px",
-              textTransform: "none",
-              color: "var(--textColor)",
-              border: "1px solid var(--textFieldBorderColor, #ced4da)",
-              padding: "8px 20px",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDeleteReview}
-            disabled={isDeletingReview}
-            sx={{
-              backgroundColor: "#dc2626",
-              color: "#fff",
-              border: "none",
-              borderRadius: "12px",
-              padding: "8px 24px",
-              fontWeight: 600,
-              fontSize: 15,
-              textTransform: "none",
-              whiteSpace: "nowrap",
-              boxShadow: "none",
-              "&:hover": {
-                backgroundColor: "#b91c1c",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-              },
-              "&:disabled": {
-                backgroundColor: "#ccc",
-                color: "#666",
-              },
-            }}
-          >
-            {isDeletingReview ? (
-              <CircularProgress size={22} sx={{ color: "#fff" }} />
-            ) : (
-              "Delete Review"
+              "Update Product"
             )}
           </Button>
         </DialogActions>
