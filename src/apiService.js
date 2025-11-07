@@ -656,6 +656,13 @@ export const apiSlice = createApi({
       }),
       providesTags: ["TallyProducts"],
     }),
+    getTallyProductByName: builder.query({
+      query: (productName) => ({
+        url: `/tally-products/get-by-product-name?productName=${encodeURIComponent(productName)}`,
+        method: "GET",
+      }),
+      providesTags: ["TallyProducts"],
+    }),
     updateTallyProduct: builder.mutation({
       query: (formData) => ({
         url: `/tally-products/${formData.get('id')}`,
@@ -758,6 +765,7 @@ export const {
   useUploadMediaMutation,
 
   useGetTallyProductsQuery,
+  useGetTallyProductByNameQuery,
   useUpdateTallyProductMutation,
 
 

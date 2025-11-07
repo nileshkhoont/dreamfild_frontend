@@ -72,7 +72,8 @@ const TallyProductList = () => {
 
   const handleViewMore = (product) => {
     // Navigate to variants page with product data
-    navigate(`/tally-products/${product.mainProduct}`, { 
+    // Use encodeURIComponent to handle special characters in product names
+    navigate(`/tally-products/${encodeURIComponent(product.mainProduct)}`, { 
       state: { productData: product } 
     });
   };

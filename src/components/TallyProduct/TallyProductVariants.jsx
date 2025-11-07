@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -41,6 +41,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useUpdateTallyProductMutation,
+  useGetTallyProductByNameQuery,
 } from "../../apiService";
 
 const Container = styled(Box)({
@@ -178,6 +179,15 @@ const TallyProductVariants = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Use API to fetch product data if not available in location state
+  const { data: apiProductData, isLoading: isLoadingProduct, error: productError, refetch } = useGetTallyProductByNameQuery(
+    id, 
+    { 
+      skip: !id,
+      refetchOnMountOrArgChange: true 
+    }
+  );
+  
   const [productData, setProductData] = useState(location.state?.productData);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -190,12 +200,37 @@ const TallyProductVariants = () => {
     severity: "success",
   });
 
+  // Helper to build a full image URL. Some image records come as relative paths
+  // like `/uploads/...`. We must prefix the backend origin so <img> requests
+  // go to the correct server. Also handle already-absolute URLs.
+  const buildImageUrl = (fileUrl) => {
+    if (!fileUrl) return null;
+    try {
+      // If it's already an absolute URL, return as-is
+      const maybe = new URL(fileUrl);
+      return maybe.href;
+    } catch (e) {
+      // Not an absolute URL — make sure we concatenate properly without double slashes
+      const backend = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+      const path = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
+      return `${backend}${path}`;
+    }
+  };
+
   // State variables for image handling
   const [selectedImages, setSelectedImages] = useState([]);
+  const [deletedImageIds, setDeletedImageIds] = useState([]);
   const [dragOver, setDragOver] = useState(false);
 
   const [updateTallyProduct, { isLoading: isUpdating }] =
     useUpdateTallyProductMutation();
+
+  // Update productData when API data is available
+  useEffect(() => {
+    if (apiProductData?.data && !productData) {
+      setProductData(apiProductData.data);
+    }
+  }, [apiProductData, productData]);
 
   // Image handling functions
   const handleImageSelect = (event) => {
@@ -240,6 +275,49 @@ const TallyProductVariants = () => {
     setSelectedImages(prev => prev.filter(img => img.id !== imageId));
   };
 
+  // Function to handle existing image deletion
+  const removeExistingImage = (imageId) => {
+    setDeletedImageIds(prev => [...prev, imageId]);
+  };
+
+  // Show loading state while fetching data
+  if (isLoadingProduct) {
+    return (
+      <Container>
+        <Card sx={{ p: 4, textAlign: "center" }}>
+          <CircularProgress sx={{ mb: 2 }} />
+          <Typography variant="h6">
+            Loading product data...
+          </Typography>
+        </Card>
+      </Container>
+    );
+  }
+
+  // Show error state if API call failed
+  if (productError) {
+    return (
+      <Container>
+        <Card sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            Error loading product data
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            {productError?.data?.message || 'Failed to fetch product data'}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/tally-products")}
+            sx={{ mt: 2 }}
+          >
+            Go Back
+          </Button>
+        </Card>
+      </Container>
+    );
+  }
+
+  // Show message if no product data available
   if (!productData) {
     return (
       <Container>
@@ -370,6 +448,7 @@ const TallyProductVariants = () => {
     setSpecifications([{ key: "", value: "" }]);
     setReviews([{ rating: 5, comment: "" }]);
     setSelectedImages([]);
+    setDeletedImageIds([]);
     setTabValue(0);
   };
 
@@ -406,22 +485,46 @@ const TallyProductVariants = () => {
         formData.append(`images`, imageObj.file);
       });
 
+      // Add deleted image IDs
+      if (deletedImageIds.length > 0) {
+        formData.append('deletedImageIds', JSON.stringify(deletedImageIds));
+      }
+
       await updateTallyProduct(formData).unwrap();
 
-      // Update local productData state
-      setProductData(prevData => ({
-        ...prevData,
-        variants: prevData.variants.map(variant => 
-          variant.id === selectedProduct.id 
-            ? { 
-                ...variant, 
-                productSpecification: specsString,
-                productReview: reviewsString
-              }
-            : variant
-        )
-      }));
+      // Refetch fresh data from API to get updated images
+      if (apiProductData && refetch) {
+        // Small delay to ensure images are processed on server
+        setTimeout(async () => {
+          try {
+            const freshData = await refetch();
+            if (freshData.data?.data) {
+              setProductData(freshData.data.data);
+            }
+          } catch (error) {
+            console.error('Error refetching data:', error);
+          }
+        }, 1000); // 1 second delay
+      } else {
+        // Fallback: Update local productData state (without images since we can't predict the new image IDs)
+        setProductData(prevData => ({
+          ...prevData,
+          variants: prevData.variants.map(variant => 
+            variant.id === selectedProduct.id 
+              ? { 
+                  ...variant, 
+                  productSpecification: specsString,
+                  productReview: reviewsString
+                }
+              : variant
+          )
+        }));
+      }
 
+      // Clear selected images and deleted image IDs after successful upload
+      setSelectedImages([]);
+      setDeletedImageIds([]);
+      
       setSnackbar({
         open: true,
         message: "Product updated successfully!",
@@ -908,73 +1011,88 @@ const TallyProductVariants = () => {
                             },
                           }}
                         >
-                          {variant.images.map((image, index) => (
-                            <Box
-                              key={image.id}
-                              sx={{
-                                position: "relative",
-                                minWidth: "80px",
-                                width: "80px",
-                                height: "80px",
-                                borderRadius: "8px",
-                                overflow: "hidden",
-                                border: "2px solid #e0e0e0",
-                                cursor: "pointer",
-                                transition: "all 0.3s ease",
-                                "&:hover": {
-                                  borderColor: "var(--purpleShadeBg)",
-                                  transform: "scale(1.05)",
-                                },
-                              }}
-                              onClick={() => {
-                                window.open(`${import.meta.env.VITE_BACKEND_URL}${image.imageUrl}`, '_blank');
-                              }}
-                            >
-                              <img
-                                src={`${import.meta.env.VITE_BACKEND_URL}${image.imageUrl}`}
-                                alt={`${variant.productName} - Image ${index + 1}`}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
+                          {variant.images.map((image, index) => {
+                            const imgSrc = buildImageUrl(image.imageUrl);
+                            // data URI placeholder (light grey box)
+                            const placeholder = `data:image/svg+xml;utf8,${encodeURIComponent(
+                              `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' fill='%23f5f5f5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>No Image</text></svg>`
+                            )}`;
+
+                            return (
+                              <Box
+                                key={image.id}
+                                sx={{
+                                  position: "relative",
+                                  minWidth: "80px",
+                                  width: "80px",
+                                  height: "80px",
+                                  borderRadius: "8px",
+                                  overflow: "hidden",
+                                  border: "2px solid #e0e0e0",
+                                  cursor: imgSrc ? "pointer" : "default",
+                                  transition: "all 0.3s ease",
+                                  "&:hover": {
+                                    borderColor: imgSrc ? "var(--purpleShadeBg)" : undefined,
+                                    transform: imgSrc ? "scale(1.05)" : undefined,
+                                  },
                                 }}
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentNode.innerHTML = `
-                                    <div style="
-                                      width: 100%;
-                                      height: 100%;
-                                      display: flex;
-                                      align-items: center;
-                                      justify-content: center;
-                                      background-color: #f5f5f5;
-                                      color: #999;
-                                      font-size: 12px;
-                                    ">
-                                      No Image
-                                    </div>
-                                  `;
+                                onClick={() => {
+                                  if (imgSrc) window.open(imgSrc, "_blank");
                                 }}
-                              />
-                              {variant.images.length > 1 && (
-                                <Box
-                                  sx={{
-                                    position: "absolute",
-                                    bottom: "4px",
-                                    right: "4px",
-                                    backgroundColor: "rgba(0,0,0,0.7)",
-                                    color: "white",
-                                    borderRadius: "4px",
-                                    padding: "2px 4px",
-                                    fontSize: "10px",
-                                    fontWeight: "bold",
-                                  }}
-                                >
-                                  {index + 1}/{variant.images.length}
-                                </Box>
-                              )}
-                            </Box>
-                          ))}
+                              >
+                                {imgSrc ? (
+                                  <img
+                                    src={imgSrc}
+                                    alt={`${variant.productName} - Image ${index + 1}`}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                    }}
+                                    onError={(e) => {
+                                      // fallback to placeholder instead of manipulating parent.innerHTML
+                                      e.target.onerror = null;
+                                      e.target.src = placeholder;
+                                    }}
+                                  />
+                                ) : (
+                                  <Box
+                                    sx={{
+                                      width: "100%",
+                                      height: "100%",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      backgroundColor: "#f5f5f5",
+                                      color: "#999",
+                                      fontSize: "12px",
+                                    }}
+                                  >
+                                    No Image
+                                  </Box>
+                                )}
+
+                                {variant.images.length > 1 && (
+                                  <Box
+                                    sx={{
+                                      position: "absolute",
+                                      bottom: "4px",
+                                      right: "4px",
+                                      backgroundColor: "rgba(0,0,0,0.7)",
+                                      color: "white",
+                                      borderRadius: "4px",
+                                      padding: "2px 4px",
+                                      fontSize: "10px",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    {index + 1}/{variant.images.length}
+                                  </Box>
+                                )}
+
+                              </Box>
+                            );
+                          })}
                         </Box>
                       </Box>
                     )}
@@ -1153,7 +1271,10 @@ const TallyProductVariants = () => {
                     color: "#666",
                   }}
                 >
-                  {selectedImages.length} image(s) selected
+                  {selectedImages.length} new image(s) selected
+                  {selectedProduct && selectedProduct.images && 
+                    ` • ${selectedProduct.images.filter(img => !deletedImageIds.includes(img.id)).length} existing image(s)`
+                  }
                 </Typography>
               </Box>
 
@@ -1207,6 +1328,64 @@ const TallyProductVariants = () => {
                     </ImagePreviewItem>
                   ))}
                 </ImagePreviewContainer>
+              )}
+
+              {/* Existing Images Section */}
+              {selectedProduct && selectedProduct.images && selectedProduct.images.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#374151",
+                      mb: 2,
+                    }}
+                  >
+                    Current Product Images ({selectedProduct.images.filter(img => !deletedImageIds.includes(img.id)).length})
+                  </Typography>
+                  <ImagePreviewContainer>
+                    {selectedProduct.images
+                      .filter(img => !deletedImageIds.includes(img.id))
+                      .map((image) => (
+                        <ImagePreviewItem key={image.id} sx={{ width: '80px', height: '80px' }}>
+                          <img 
+                            src={buildImageUrl(image.imageUrl)} 
+                            alt="Current Product Image"
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'cover',
+                              backgroundColor: '#f5f5f5'
+                            }}
+                            onError={(e) => {
+                              e.target.style.backgroundColor = '#f5f5f5';
+                              e.target.alt = 'Image not found';
+                            }}
+                          />
+                          <RemoveImageButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeExistingImage(image.id);
+                            }}
+                            sx={{ 
+                              width: '20px', 
+                              height: '20px', 
+                              top: '2px', 
+                              right: '2px',
+                              backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                              '&:hover': {
+                                backgroundColor: 'rgba(220, 38, 38, 1)',
+                              }
+                            }}
+                          >
+                            <X size={12} />
+                          </RemoveImageButton>
+                        </ImagePreviewItem>
+                      ))}
+                  </ImagePreviewContainer>
+                </Box>
               )}
             </TabPanel>
 
