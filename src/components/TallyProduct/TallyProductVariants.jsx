@@ -199,22 +199,36 @@ const TallyProductVariants = () => {
     message: "",
     severity: "success",
   });
+  // Debug image load statuses (id => 'loaded' | 'error')
+  const [debugImageStatuses, setDebugImageStatuses] = useState({});
+  
+  // Image preview modal state
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [previewImageName, setPreviewImageName] = useState("");
 
   // Helper to build a full image URL. Some image records come as relative paths
   // like `/uploads/...`. We must prefix the backend origin so <img> requests
   // go to the correct server. Also handle already-absolute URLs.
   const buildImageUrl = (fileUrl) => {
     if (!fileUrl) return null;
-    try {
-      // If it's already an absolute URL, return as-is
-      const maybe = new URL(fileUrl);
-      return maybe.href;
-    } catch (e) {
-      // Not an absolute URL — make sure we concatenate properly without double slashes
-      const backend = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
-      const path = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
-      return `${backend}${path}`;
+    const raw = String(fileUrl).replace(/\\/g, "/"); // normalize backslashes
+  // If it is an absolute http(s) URL, use as-is
+  if (/^https?:\/\//i.test(raw)) return raw;
+  // Protocol-relative URL (e.g., //cdn.domain.com/asset)
+  if (raw.startsWith("//")) return `${window.location.protocol}${raw}`;
+
+    // For relative URLs like "/uploads/..." always prefix the backend origin
+    let backend = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+    // If app is served over https but backend is http, try upgrading to https to avoid mixed-content blocks
+    if (backend.startsWith("http://") && typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      backend = backend.replace(/^http:\/\//i, 'https://');
     }
+    // If backend isn't configured, fall back to returning the relative URL (might be proxied)
+    if (!backend) return raw;
+
+    const path = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${backend}${path}`;
   };
 
   // State variables for image handling
@@ -368,10 +382,8 @@ const TallyProductVariants = () => {
   };
 
   const handleRemoveReview = (index) => {
-    if (reviews.length > 1) {
-      const newReviews = reviews.filter((_, i) => i !== index);
-      setReviews(newReviews);
-    }
+    const newReviews = reviews.filter((_, i) => i !== index);
+    setReviews(newReviews.length > 0 ? newReviews : [{ rating: 5, comment: "" }]);
   };
 
   const handleEditSpec = (variant) => {
@@ -984,7 +996,7 @@ const TallyProductVariants = () => {
                     )}
 
                     {/* Product Images Section */}
-                    {variant.images && variant.images.length > 0 && (
+                    {(variant.images?.length || variant.image?.length) > 0 && (
                       <Box sx={{ mb: 2 }}>
                         <Box
                           sx={{
@@ -1008,8 +1020,13 @@ const TallyProductVariants = () => {
                             },
                           }}
                         >
-                          {variant.images.map((image, index) => {
-                            const imgSrc = buildImageUrl(image.imageUrl);
+                          {(variant.images || variant.image).map((image, index) => {
+                            let imgSrc = buildImageUrl(image.imageUrl);
+                            // Add a light cache-buster so freshly uploaded images show without hard refresh
+                            const cacheKey = image.updatedAt || image.createdAt || image.id;
+                            if (imgSrc && cacheKey) {
+                              imgSrc += (imgSrc.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(cacheKey);
+                            }
                             // data URI placeholder (light grey box)
                             const placeholder = `data:image/svg+xml;utf8,${encodeURIComponent(
                               `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' fill='%23f5f5f5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>No Image</text></svg>`
@@ -1034,23 +1051,32 @@ const TallyProductVariants = () => {
                                   },
                                 }}
                                 onClick={() => {
-                                  if (imgSrc) window.open(imgSrc, "_blank");
+                                  if (imgSrc) {
+                                    setPreviewImageUrl(imgSrc);
+                                    setPreviewImageName(variant.productName);
+                                    setImagePreviewOpen(true);
+                                  }
                                 }}
                               >
                                 {imgSrc ? (
                                   <img
                                     src={imgSrc}
                                     alt={`${variant.productName} - Image ${index + 1}`}
+                                    title={imgSrc}
                                     style={{
                                       width: "100%",
                                       height: "100%",
                                       objectFit: "cover",
                                     }}
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
                                     onError={(e) => {
-                                      // fallback to placeholder instead of manipulating parent.innerHTML
+                                      console.warn('Image failed to load:', imgSrc);
                                       e.target.onerror = null;
                                       e.target.src = placeholder;
+                                      setDebugImageStatuses(prev => ({...prev, [image.id]: 'error'}));
                                     }}
+                                    onLoad={() => setDebugImageStatuses(prev => ({...prev, [image.id]: 'loaded'}))}
                                   />
                                 ) : (
                                   <Box
@@ -1068,8 +1094,29 @@ const TallyProductVariants = () => {
                                     No Image
                                   </Box>
                                 )}
-
-                                {variant.images.length > 1 && (
+                                {/* Debug overlay showing status & partial URL */}
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    background: 'rgba(0,0,0,0.55)',
+                                    color: '#fff',
+                                    fontSize: '9px',
+                                    lineHeight: 1.2,
+                                    p: 0.5,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '2px'
+                                  }}
+                                >
+                                  <span>Status: {debugImageStatuses[image.id] || 'pending'}</span>
+                                  <span style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
+                                    {imgSrc?.replace(/^https?:\/\//,'')}
+                                  </span>
+                                </Box>
+                                {((variant.images || variant.image).length > 1) && (
                                   <Box
                                     sx={{
                                       position: "absolute",
@@ -1083,7 +1130,7 @@ const TallyProductVariants = () => {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    {index + 1}/{variant.images.length}
+                                    {index + 1}/{(variant.images || variant.image).length}
                                   </Box>
                                 )}
 
@@ -1269,8 +1316,8 @@ const TallyProductVariants = () => {
                   }}
                 >
                   {selectedImages.length} new image(s) selected
-                  {selectedProduct && selectedProduct.images && 
-                    ` • ${selectedProduct.images.filter(img => !deletedImageIds.includes(img.id)).length} existing image(s)`
+          {selectedProduct && (selectedProduct.images || selectedProduct.image) && 
+            ` • ${(selectedProduct.images || selectedProduct.image).filter(img => !deletedImageIds.includes(img.id)).length} existing image(s)`
                   }
                 </Typography>
               </Box>
@@ -1328,7 +1375,7 @@ const TallyProductVariants = () => {
               )}
 
               {/* Existing Images Section */}
-              {selectedProduct && selectedProduct.images && selectedProduct.images.length > 0 && (
+                    {selectedProduct && (selectedProduct.images || selectedProduct.image) && (selectedProduct.images || selectedProduct.image).length > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography
                     variant="body2"
@@ -1339,16 +1386,22 @@ const TallyProductVariants = () => {
                       mb: 2,
                     }}
                   >
-                    Current Product Images ({selectedProduct.images.filter(img => !deletedImageIds.includes(img.id)).length})
+                    Current Product Images ({(selectedProduct.images || selectedProduct.image).filter(img => !deletedImageIds.includes(img.id)).length})
                   </Typography>
                   <ImagePreviewContainer>
-                    {selectedProduct.images
+                    {(selectedProduct.images || selectedProduct.image)
                       .filter(img => !deletedImageIds.includes(img.id))
                       .map((image) => (
                         <ImagePreviewItem key={image.id} sx={{ width: '80px', height: '80px' }}>
                           <img 
-                            src={buildImageUrl(image.imageUrl)} 
+                            src={(() => {
+                              let src = buildImageUrl(image.imageUrl);
+                              const ck = image.updatedAt || image.createdAt || image.id;
+                              if (src && ck) src += (src.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(ck);
+                              return src;
+                            })()} 
                             alt="Current Product Image"
+                            title={buildImageUrl(image.imageUrl)}
                             style={{ 
                               width: '100%', 
                               height: '100%', 
@@ -1356,6 +1409,7 @@ const TallyProductVariants = () => {
                               backgroundColor: '#f5f5f5'
                             }}
                             onError={(e) => {
+                              console.warn('Dialog image failed to load:', buildImageUrl(image.imageUrl));
                               e.target.style.backgroundColor = '#f5f5f5';
                               e.target.alt = 'Image not found';
                             }}
@@ -1567,47 +1621,53 @@ const TallyProductVariants = () => {
                       border: "1px solid #e9ecef",
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            color: "#374151",
-                            mb: 0.5,
-                          }}
-                        >
-                          Rating
-                        </Typography>
-                        <Rating
-                          value={review.rating}
-                          onChange={(e, newValue) =>
-                            handleReviewChange(index, "rating", newValue)
-                          }
-                          sx={{
-                            "& .MuiRating-iconFilled": {
-                              color: "#fbbf24",
-                            },
-                          }}
-                        />
-                      </Box>
-                      {reviews.length > 1 && (
-                        <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveReview(index)}
-                            sx={{
-                              color: "#dc2626",
-                              "&:hover": {
-                                backgroundColor: "rgba(220, 38, 38, 0.1)",
-                              },
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </IconButton>
-                        </Box>
-                      )}
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "#374151",
+                        }}
+                      >
+                        Review #{index + 1}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveReview(index)}
+                        sx={{
+                          color: "#dc2626",
+                          "&:hover": {
+                            backgroundColor: "rgba(220, 38, 38, 0.1)",
+                          },
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#374151",
+                          mb: 0.5,
+                        }}
+                      >
+                        Rating
+                      </Typography>
+                      <Rating
+                        value={review.rating}
+                        onChange={(e, newValue) =>
+                          handleReviewChange(index, "rating", newValue)
+                        }
+                        sx={{
+                          "& .MuiRating-iconFilled": {
+                            color: "#fbbf24",
+                          },
+                        }}
+                      />
                     </Box>
                     <Box>
                       <Typography
@@ -1712,6 +1772,69 @@ const TallyProductVariants = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Image Preview Modal */}
+      <Dialog
+        open={imagePreviewOpen}
+        onClose={() => setImagePreviewOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '90vh',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 600,
+            fontSize: 18,
+            color: "#333",
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {previewImageName}
+          <IconButton
+            onClick={() => setImagePreviewOpen(false)}
+            size="small"
+            sx={{ color: "inherit" }}
+          >
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#f5f5f5',
+            minHeight: '400px',
+          }}
+        >
+          {previewImageUrl && (
+            <img
+              src={previewImageUrl}
+              alt={previewImageName}
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '70vh',
+                objectFit: 'contain',
+              }}
+              onError={(e) => {
+                console.error('Preview image failed to load:', previewImageUrl);
+                e.target.style.display = 'none';
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };
