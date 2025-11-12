@@ -352,10 +352,8 @@ const TallyProductVariants = () => {
   };
 
   const handleRemoveSpecification = (index) => {
-    if (specifications.length > 1) {
-      const newSpecs = specifications.filter((_, i) => i !== index);
-      setSpecifications(newSpecs);
-    }
+    const newSpecs = specifications.filter((_, i) => i !== index);
+    setSpecifications(newSpecs.length > 0 ? newSpecs : [{ key: "", value: "" }]);
   };
 
   // Review handling functions
@@ -561,9 +559,8 @@ const TallyProductVariants = () => {
       return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {Object.entries(specs).map(([key, value]) => {
-            const isVideoLink = key.toLowerCase().includes('video') && 
-                               typeof value === 'string' && 
-                               (value.includes('youtube.com') || value.includes('youtu.be'));
+            const isVideoLink = typeof value === 'string' && 
+                               (value.toLowerCase().includes('youtube') || value.toLowerCase().includes('youtu.be'));
             
             return (
               <SpecificationItem key={key}>
@@ -1504,22 +1501,20 @@ const TallyProductVariants = () => {
                         }}
                       />
                     </Box>
-                    {specifications.length > 1 && (
-                      <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveSpecification(index)}
-                          sx={{
-                            color: "#dc2626",
-                            "&:hover": {
-                              backgroundColor: "rgba(220, 38, 38, 0.1)",
-                            },
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </IconButton>
-                      </Box>
-                    )}
+                    <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveSpecification(index)}
+                        sx={{
+                          color: "#dc2626",
+                          "&:hover": {
+                            backgroundColor: "rgba(220, 38, 38, 0.1)",
+                          },
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </Box>
                   </Box>
                 ))}
               </Box>
