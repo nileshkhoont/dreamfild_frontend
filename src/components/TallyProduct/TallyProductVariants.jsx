@@ -188,7 +188,7 @@ const TallyProductVariants = () => {
     }
   );
   
-  const [productData, setProductData] = useState(location.state?.productData);
+  const [productData, setProductData] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [specifications, setSpecifications] = useState([{ key: "", value: "" }]);
@@ -227,10 +227,10 @@ const TallyProductVariants = () => {
 
   // Update productData when API data is available
   useEffect(() => {
-    if (apiProductData?.data && !productData) {
+    if (apiProductData?.data) {
       setProductData(apiProductData.data);
     }
-  }, [apiProductData, productData]);
+  }, [apiProductData]);
 
   // Image handling functions
   const handleImageSelect = (event) => {
