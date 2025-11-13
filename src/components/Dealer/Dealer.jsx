@@ -751,6 +751,36 @@ const Dealer = () => {
                     mb: 0.5,
                   }}
                 >
+                  Password
+                </Typography>
+                <TextField
+                  value={selectedDealer.password || "-"}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      fontSize: "14px",
+                      borderRadius: "12px",
+                      backgroundColor: "#f9f9f9",
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    mb: 0.5,
+                  }}
+                >
                   Number
                 </Typography>
                 <TextField
