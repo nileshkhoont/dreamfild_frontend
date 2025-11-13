@@ -692,6 +692,15 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Dealers"],
     }),
+
+    // Orders API
+    getOrders: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/orders?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["Orders"],
+    }),
   }),
 });
 
@@ -768,9 +777,9 @@ export const {
   useGetTallyProductByNameQuery,
   useUpdateTallyProductMutation,
 
-
-
   // Add these missing exports
   useGetTallyLedgersQuery,
   useCreatePartyLedgerMappingMutation,
+  
+  useGetOrdersQuery,
 } = apiSlice;

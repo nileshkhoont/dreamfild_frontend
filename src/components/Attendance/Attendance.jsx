@@ -1330,11 +1330,7 @@ return { presentDays, leaveDays, totalWorkingHours };
                             "var(--cardBoxShadow, 0 2px 10px rgba(0,0,0,0.03))",
                           padding: 2,
                           marginBottom: 2,
-                          width: "100%",
-
-                          padding: 2,
                           marginTop: 1,
-                          marginBottom: 2,
                           marginLeft: "1px",
                           backgroundColor: "#fff",
                         }}

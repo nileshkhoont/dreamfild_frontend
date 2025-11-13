@@ -122,6 +122,12 @@ const menuItems = [
     icon: AccountBalanceOutlinedIcon,
     activeIcon: AccountBalanceIcon,
   },
+   {
+    path: "/orders",
+    label: "Orders",
+    icon: ShoppingCartOutlinedIcon,
+    activeIcon: ShoppingCartIcon,
+  },
   // {
   //   path: "/attendance",
   //   label: "Attendance",
