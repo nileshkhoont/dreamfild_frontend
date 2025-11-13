@@ -100,7 +100,7 @@ const menuItems = [
   },
   {
     path: "/tally-orders",
-    label: "Tally Orders",
+    label: "Confirm Orders",
     icon: ShoppingCartOutlinedIcon,
     activeIcon: ShoppingCartIcon,
   },
@@ -942,93 +942,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
         </List>
       </Box>
 
-      <BottomActionsWrapper>
-        <SideBySideActions collapsed={collapsed} isuser={loggedInUser?.role === "user" ? "true" : "false"}>
-          {/* Profile Button */}
-          {loading ? (
-            <Skeleton
-              variant="rectangular"
-              width={loggedInUser?.role === "user" ? "50%" : "30%"}
-              height={44}
-              sx={{ borderRadius: 2 }}
-            />
-          ) : (
-            <Tooltip title="Profile" placement="top" arrow>
-              <StyledBottomListItemButton
-                onClick={() => navigate("/user-profile")}
-              >
-                <StyledListItemIcon sx={{ justifyContent: "center", minWidth: 0 }}>
-                  <FaRegUserCircle size={22} />
-                </StyledListItemIcon>
-              </StyledBottomListItemButton>
-            </Tooltip>
-          )}
-
-          {/* Location Button - Only show for admin and hr roles */}
-          {isAdminRole && (
-            loading ? (
-              <Skeleton
-                variant="rectangular"
-                width={"30%"}
-                height={44}
-                sx={{ borderRadius: 2 }}
-              />
-            ) : (
-              <Tooltip
-                title="Location"
-                placement="top"
-                arrow
-              >
-                <StyledBottomListItemButton onClick={handleLocationModalOpen}>
-                  <StyledListItemIcon sx={{ justifyContent: "center", minWidth: 0 }}>
-                    <FaLocationDot size={22} />
-                  </StyledListItemIcon>
-                </StyledBottomListItemButton>
-              </Tooltip>
-            )
-          )}
-        </SideBySideActions>
-
-        {/* Logout button */}
-        {loading ? (
-          <Skeleton
-            variant="rectangular"
-            width={"100%"}
-            height={44}
-            sx={{ borderRadius: 2, margin: "8px auto" }}
-          />
-        ) : (
-          <StyledListItemButton
-            onClick={() => setLogoutDialogOpen(true)}
-            sx={{
-              margin: "8px auto",
-              width: "100%",
-              justifyContent: collapsed ? "center" : "flex-start",
-              borderRadius: "8px",
-              background: "#f5f5f5",
-              color: "#191919",
-              "&:hover": {
-                background: "#eeeeee",
-              },
-            }}
-          >
-            <StyledListItemIcon sx={{ color: "#191919", minWidth: collapsed ? 0 : 48 }}>
-              <MdLogout size={22} />
-            </StyledListItemIcon>
-            {!collapsed && (
-              <StyledListItemText
-                primary="Logout"
-                sx={{
-                  ".MuiTypography-root": {
-                    color: "#191919",
-                    fontWeight: 500,
-                  },
-                }}
-              />
-            )}
-          </StyledListItemButton>
-        )}
-      </BottomActionsWrapper>
+      {/* Bottom actions removed */}
     </Box>
   );
 

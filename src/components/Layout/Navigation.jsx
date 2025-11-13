@@ -1253,47 +1253,6 @@ const Navigation = () => {
                       </Typography>
                     </Box>
 
-                    <CustomMenuItem
-                      onClick={() => {
-                        navigate("/user-profile");
-                        handleMenuClose();
-                      }}
-                    >
-                      <FaRegUserCircle
-                        size={20}
-                        style={{
-                          color: "var(--purpleShadeBg)",
-                          marginRight: 8,
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 500, ml: 1 }}
-                      >
-                        Profile
-                      </Typography>
-                    </CustomMenuItem>
-                    {isAdminRole && (
-                      <CustomMenuItem
-                        onClick={() => {
-                          handleLocationModalOpen();
-                        }}
-                      >
-                        <FaLocationDot
-                          sx={{
-                            color: "var(--purpleShadeBg)",
-                            fontSize: 20,
-                            mr: 1,
-                          }}
-                        />
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 500, ml: 1 }}
-                        >
-                          Geo Location
-                        </Typography>
-                      </CustomMenuItem>
-                    )}
                     <CustomMenuItem onClick={() => setLogoutDialogOpen(true)}>
                       <MdLogout
                         size={20}

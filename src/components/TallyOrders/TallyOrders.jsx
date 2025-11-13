@@ -294,7 +294,7 @@ const TallyOrders = () => {
                 }}
                 component="span"
               >
-                Tally Orders
+                Confirm Orders
               </Typography>
             </Box>
           }

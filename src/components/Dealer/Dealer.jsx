@@ -158,15 +158,41 @@ const Dealer = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Allow only numbers for phone number field and limit to 10 digits
+    if (name === 'number') {
+      const numericValue = value.replace(/\D/g, '');
+      if (numericValue.length <= 10) {
+        setFormData((prev) => ({ ...prev, [name]: numericValue }));
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleAddUserInputChange = (e) => {
     const { name, value } = e.target;
-    setAddUserFormData((prev) => ({ ...prev, [name]: value }));
+    // Allow only numbers for phone number field and limit to 10 digits
+    if (name === 'number') {
+      const numericValue = value.replace(/\D/g, '');
+      if (numericValue.length <= 10) {
+        setAddUserFormData((prev) => ({ ...prev, [name]: numericValue }));
+      }
+    } else {
+      setAddUserFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async () => {
+    // Validate phone number is exactly 10 digits
+    if (!formData.number || formData.number.length !== 10) {
+      setSnackbar({
+        open: true,
+        message: "Phone number must be exactly 10 digits",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       await registerDealer(formData).unwrap();
       setSnackbar({
@@ -225,6 +251,16 @@ const Dealer = () => {
   };
 
   const handleAddUserSubmit = async () => {
+    // Validate phone number is exactly 10 digits
+    if (!addUserFormData.number || addUserFormData.number.length !== 10) {
+      setSnackbar({
+        open: true,
+        message: "Phone number must be exactly 10 digits",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       await addDealerUser(addUserFormData).unwrap();
       setSnackbar({
