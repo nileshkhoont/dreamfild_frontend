@@ -231,6 +231,14 @@ const TallyProductVariants = () => {
     return `${backend}${path}`;
   };
 
+  // Helper to safely extract image URL from image object
+  const getImagePath = (imgObj) => {
+    if (!imgObj) return null;
+    if (typeof imgObj === 'string') return imgObj;
+    // Try common field names
+    return imgObj.imageUrl || imgObj.url || imgObj.fileUrl || imgObj.path || null;
+  };
+
   // State variables for image handling
   const [selectedImages, setSelectedImages] = useState([]);
   const [deletedImageIds, setDeletedImageIds] = useState([]);
@@ -447,6 +455,11 @@ const TallyProductVariants = () => {
       console.error('Error parsing reviews:', error);
       setReviews([{ rating: 5, comment: "" }]);
     }
+    
+    console.log('=== OPENING EDIT DIALOG ===');
+    console.log('Variant:', variant);
+    console.log('Variant images:', variant.images);
+    console.log('Variant image:', variant.image);
     
     setSelectedProduct(variant);
     setEditDialogOpen(true);
@@ -1021,7 +1034,7 @@ const TallyProductVariants = () => {
                           }}
                         >
                           {(variant.images || variant.image).map((image, index) => {
-                            let imgSrc = buildImageUrl(image.imageUrl);
+                            let imgSrc = buildImageUrl(getImagePath(image));
                             // Add a light cache-buster so freshly uploaded images show without hard refresh
                             const cacheKey = image.updatedAt || image.createdAt || image.id;
                             if (imgSrc && cacheKey) {
@@ -1391,17 +1404,24 @@ const TallyProductVariants = () => {
                   <ImagePreviewContainer>
                     {(selectedProduct.images || selectedProduct.image)
                       .filter(img => !deletedImageIds.includes(img.id))
-                      .map((image) => (
+                      .map((image) => {
+                        const imagePath = getImagePath(image);
+                        const fullUrl = buildImageUrl(imagePath);
+                        console.log('Dialog rendering image:', { image, imagePath, fullUrl });
+                        
+                        return (
                         <ImagePreviewItem key={image.id} sx={{ width: '80px', height: '80px' }}>
                           <img 
                             src={(() => {
-                              let src = buildImageUrl(image.imageUrl);
+                              let src = fullUrl;
                               const ck = image.updatedAt || image.createdAt || image.id;
                               if (src && ck) src += (src.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(ck);
                               return src;
                             })()} 
                             alt="Current Product Image"
-                            title={buildImageUrl(image.imageUrl)}
+                            title={fullUrl}
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
                             style={{ 
                               width: '100%', 
                               height: '100%', 
@@ -1409,7 +1429,7 @@ const TallyProductVariants = () => {
                               backgroundColor: '#f5f5f5'
                             }}
                             onError={(e) => {
-                              console.warn('Dialog image failed to load:', buildImageUrl(image.imageUrl));
+                              console.error('Dialog image FAILED:', { image, imagePath, fullUrl });
                               e.target.style.backgroundColor = '#f5f5f5';
                               e.target.alt = 'Image not found';
                             }}
@@ -1434,7 +1454,8 @@ const TallyProductVariants = () => {
                             <X size={12} />
                           </RemoveImageButton>
                         </ImagePreviewItem>
-                      ))}
+                        );
+                      })}
                   </ImagePreviewContainer>
                 </Box>
               )}
