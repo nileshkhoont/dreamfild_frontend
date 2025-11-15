@@ -99,6 +99,12 @@ const menuItems = [
     activeIcon: CloudUploadOutlinedIcon, // Same icon for both states
   },
   {
+    path: "/scheme",
+    label: "Scheme",
+    icon: ShareOutlinedIcon,
+    activeIcon: ShareIcon,
+  },
+  {
     path: "/tally-orders",
     label: "Confirm Orders",
     icon: ShoppingCartOutlinedIcon,

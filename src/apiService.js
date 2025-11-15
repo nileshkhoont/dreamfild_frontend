@@ -625,8 +625,10 @@ export const apiSlice = createApi({
 
     // --- MEDIA MODULE START ---
     getMedia: builder.query({
-      query: ({ page = 1, limit = 10 }) => ({
-        url: `/media?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 10, type = "Media" } = {}) => ({
+        url: `/media?page=${page}&limit=${limit}&type=${encodeURIComponent(
+          type
+        )}`,
         method: "GET",
       }),
       providesTags: ["Media"],
@@ -640,10 +642,11 @@ export const apiSlice = createApi({
       invalidatesTags: ["Media"],
     }),
     uploadMedia: builder.mutation({
-      query: (body) => ({
-        url: "/media/upload",
+      query: ({ formData, type = "Media" }) => ({
+        // Pass dynamic type as a query param for uploads
+        url: `/media/upload?type=${encodeURIComponent(type)}`,
         method: "POST",
-        body,
+        body: formData,
       }),
       invalidatesTags: ["Media"],
     }),

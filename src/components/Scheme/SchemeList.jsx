@@ -26,7 +26,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import { Plus, Upload, File, X } from "lucide-react";
+import { Plus, Upload, File, X, Percent } from "lucide-react";
 import { useGetMediaQuery, useUpdateMediaStatusMutation, useUploadMediaMutation } from "../../apiService";
 
 const Container = styled(Box)({
@@ -54,7 +54,7 @@ const StyledTableContainer = styled(TableContainer)({
   },
 });
 
-const MediaList = () => {
+const SchemeList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [snackbar, setSnackbar] = useState({
@@ -70,10 +70,10 @@ const MediaList = () => {
   const [uploadMedia, { isLoading: isUploading }] = useUploadMediaMutation();
   const fileInputRef = React.useRef();
 
-  const { data, isLoading, refetch } = useGetMediaQuery({ page: page + 1, limit: rowsPerPage, type: "Media" });
+  const { data, isLoading, refetch } = useGetMediaQuery({ page: page + 1, limit: rowsPerPage, type: "Offer" });
   const [updateMediaStatus] = useUpdateMediaStatusMutation();
 
-  const mediaList = data?.data || [];
+  const schemeList = data?.data || [];
   const totalCount = data?.totalCount || 0;
 
   const handleChangePage = (event, newPage) => setPage(newPage);
@@ -82,10 +82,10 @@ const MediaList = () => {
     setPage(0);
   };
 
-  const handleStatusToggle = async (media) => {
-    const newStatus = media.status === "active" ? "deactive" : "active";
+  const handleStatusToggle = async (scheme) => {
+    const newStatus = scheme.status === "active" ? "deactive" : "active";
     try {
-      await updateMediaStatus({ id: media.id, status: newStatus }).unwrap();
+      await updateMediaStatus({ id: scheme.id, status: newStatus }).unwrap();
       setSnackbar({
         open: true,
         message: `Status updated to ${newStatus}`,
@@ -109,17 +109,17 @@ const MediaList = () => {
       formData.append("file", file);
       formData.append("fileName", file.name);
       formData.append("url", "");
-      await uploadMedia({ formData, type: "Media" }).unwrap();
+      await uploadMedia({ formData, type: "Offer" }).unwrap();
       setSnackbar({
         open: true,
-        message: "Media uploaded successfully!",
+        message: "Scheme uploaded successfully!",
         severity: "success",
       });
       refetch();
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error?.data?.message || "Failed to upload media",
+        message: error?.data?.message || "Failed to upload scheme",
         severity: "error",
       });
     }
@@ -143,13 +143,13 @@ const MediaList = () => {
     return `https://${trimmedPath}`;
   };
 
-  const handleImageClick = (media) => {
-    const imageUrl = getImageUrl(media.fileUrl);
+  const handleImageClick = (scheme) => {
+    const imageUrl = getImageUrl(scheme.fileUrl);
     if (imageUrl) {
       setPreviewModal({
         open: true,
         imageUrl,
-        fileName: media.fileName,
+        fileName: scheme.fileName,
       });
     }
   };
@@ -193,7 +193,7 @@ const MediaList = () => {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <File size={22} color="var(--textColor)" />
+                  <Percent size={22} color="var(--textColor)" />
                   <Typography
                     variant="h5"
                     sx={{
@@ -204,7 +204,7 @@ const MediaList = () => {
                     }}
                     component="span"
                   >
-                    Media List
+                    Scheme List
                   </Typography>
                 </Box>
                 <Button
@@ -231,7 +231,7 @@ const MediaList = () => {
                   onClick={handleUploadButtonClick}
                   disabled={isUploading}
                 >
-                  {isUploading ? "Uploading..." : "Upload Media"}
+                  {isUploading ? "Uploading..." : "Upload Scheme"}
                 </Button>
                 <input
                   type="file"
@@ -256,7 +256,7 @@ const MediaList = () => {
             >
               <CircularProgress />
             </Box>
-          ) : mediaList.length === 0 ? (
+          ) : schemeList.length === 0 ? (
             <Box
               sx={{
                 display: "flex",
@@ -267,9 +267,9 @@ const MediaList = () => {
                 gap: 2,
               }}
             >
-              <File size={48} color="#ccc" />
+              <Percent size={48} color="#ccc" />
               <Typography variant="body1" sx={{ color: "#666" }}>
-                No media files found
+                No scheme files found
               </Typography>
             </Box>
           ) : (
@@ -283,21 +283,20 @@ const MediaList = () => {
                       <TableCell>File Name</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created At</TableCell>
-                      {/* <TableCell align="center">Actions</TableCell> */}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {mediaList.map((media) => {
-                      const imageUrl = getImageUrl(media.fileUrl);
+                    {schemeList.map((scheme) => {
+                      const imageUrl = getImageUrl(scheme.fileUrl);
                       return (
-                        <TableRow key={media.id}>
-                          <TableCell>{media.id}</TableCell>
+                        <TableRow key={scheme.id}>
+                          <TableCell>{scheme.id}</TableCell>
                           <TableCell>
                             {imageUrl ? (
                               <Box
                                 component="img"
                                 src={imageUrl}
-                                alt={media.fileName}
+                                alt={scheme.fileName}
                                 sx={{
                                   width: 60,
                                   height: 60,
@@ -310,18 +309,18 @@ const MediaList = () => {
                                     transition: "opacity 0.3s",
                                   },
                                 }}
-                                onClick={() => handleImageClick(media)}
+                                onClick={() => handleImageClick(scheme)}
                               />
                             ) : (
-                              <File size={40} color="#ccc" />
+                              <Percent size={40} color="#ccc" />
                             )}
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 500 }}>{media.fileName}</TableCell>
+                          <TableCell sx={{ fontWeight: 500 }}>{scheme.fileName}</TableCell>
                           <TableCell>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                               <Chip
-                                label={media.status}
-                                color={getStatusColor(media.status)}
+                                label={scheme.status}
+                                color={getStatusColor(scheme.status)}
                                 size="small"
                                 sx={{
                                   textTransform: "capitalize",
@@ -330,12 +329,12 @@ const MediaList = () => {
                                 }}
                               />
                               <Tooltip
-                                title={`Toggle to ${media.status === "active" ? "deactive" : "active"
+                                title={`Toggle to ${scheme.status === "active" ? "deactive" : "active"
                                   }`}
                               >
                                 <Switch
-                                  checked={media.status === "active"}
-                                  onChange={() => handleStatusToggle(media)}
+                                  checked={scheme.status === "active"}
+                                  onChange={() => handleStatusToggle(scheme)}
                                   size="small"
                                   sx={{
                                     "& .MuiSwitch-switchBase.Mui-checked": {
@@ -351,28 +350,10 @@ const MediaList = () => {
                             </Box>
                           </TableCell>
                           <TableCell>
-                            {media.createdAt
-                              ? new Date(media.createdAt).toLocaleDateString()
+                            {scheme.createdAt
+                              ? new Date(scheme.createdAt).toLocaleDateString()
                               : "-"}
                           </TableCell>
-                          {/* <TableCell align="center">
-                            <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                              <Tooltip title="View File">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => window.open(media.url, "_blank")}
-                                  sx={{
-                                    color: "var(--purpleShadeBg)",
-                                    "&:hover": {
-                                      backgroundColor: "rgba(80, 60, 180, 0.1)",
-                                    },
-                                  }}
-                                >
-                                  <File size={18} />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </TableCell> */}
                         </TableRow>
                       );
                     })}
@@ -473,4 +454,4 @@ const MediaList = () => {
   );
 };
 
-export default MediaList;
+export default SchemeList;
