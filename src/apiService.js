@@ -642,12 +642,15 @@ export const apiSlice = createApi({
       invalidatesTags: ["Media"],
     }),
     uploadMedia: builder.mutation({
-      query: ({ formData, type = "Media" }) => ({
-        // Pass dynamic type as a query param for uploads
-        url: `/media/upload?type=${encodeURIComponent(type)}`,
-        method: "POST",
-        body: formData,
-      }),
+      query: ({ formData, type = "Media" }) => {
+        // Append type to formData instead of query param
+        formData.append("type", type);
+        return {
+          url: `/media/upload`,
+          method: "POST",
+          body: formData,
+        };
+      },
       invalidatesTags: ["Media"],
     }),
     // --- MEDIA MODULE END ---
