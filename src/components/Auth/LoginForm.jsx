@@ -340,7 +340,7 @@ function LoginForm() {
                       sx={{ mb: 2 }}
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                  {/* <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                     <Typography
                       variant="body2"
                       sx={{
@@ -355,7 +355,7 @@ function LoginForm() {
                     >
                       Forgot password?
                     </Typography>
-                  </Box>
+                  </Box> */}
                   <AnimatedButton
                     type="submit"
                     fullWidth

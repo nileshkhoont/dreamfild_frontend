@@ -33,8 +33,8 @@ const AppRoutes = () => {
     <Routes>
       <Route element={<ProtectedRoute authenticationRequired={false} />}>
         <Route path="/" element={<LoginForm />} />
-        <Route path="/signup" element={<SignupForm />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* <Route path="/signup" element={<SignupForm />} /> */}
+        {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
       </Route>
       <Route element={<ProtectedRoute authenticationRequired={true} />}>
         <Route element={<Layout />}>
