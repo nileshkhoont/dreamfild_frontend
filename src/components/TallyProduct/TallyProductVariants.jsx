@@ -193,6 +193,7 @@ const TallyProductVariants = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [specifications, setSpecifications] = useState([{ key: "", value: "" }]);
   const [reviews, setReviews] = useState([{ rating: 5, comment: "" }]);
+  const [aliases, setAliases] = useState([{ key: "", value: "" }]);
   const [tabValue, setTabValue] = useState(0);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -394,6 +395,24 @@ const TallyProductVariants = () => {
     setReviews(newReviews.length > 0 ? newReviews : [{ rating: 5, comment: "" }]);
   };
 
+  // Alias handling functions
+  const handleAliasChange = (index, field, value) => {
+    console.log('Alias change:', { index, field, value, currentAliases: aliases });
+    const newAliases = [...aliases];
+    newAliases[index][field] = value;
+    console.log('New aliases:', newAliases);
+    setAliases(newAliases);
+  };
+
+  const handleAddAlias = () => {
+    setAliases([...aliases, { key: "", value: "" }]);
+  };
+
+  const handleRemoveAlias = (index) => {
+    const newAliases = aliases.filter((_, i) => i !== index);
+    setAliases(newAliases.length > 0 ? newAliases : [{ key: "", value: "" }]);
+  };
+
   const handleEditSpec = (variant) => {
     try {
       // Handle specifications
@@ -456,6 +475,13 @@ const TallyProductVariants = () => {
       setReviews([{ rating: 5, comment: "" }]);
     }
     
+    // Handle aliases - show productAlias field (can be null)
+    const aliasData = [
+      { key: "Alias Name", value: variant.productAlias || "" }
+    ];
+    
+    setAliases(aliasData);
+    
     console.log('=== OPENING EDIT DIALOG ===');
     console.log('Variant:', variant);
     console.log('Variant images:', variant.images);
@@ -470,6 +496,7 @@ const TallyProductVariants = () => {
     setSelectedProduct(null);
     setSpecifications([{ key: "", value: "" }]);
     setReviews([{ rating: 5, comment: "" }]);
+    setAliases([{ key: "", value: "" }]);
     setSelectedImages([]);
     setDeletedImageIds([]);
     setTabValue(0);
@@ -480,6 +507,12 @@ const TallyProductVariants = () => {
       const formData = new FormData();
       
       formData.append('id', selectedProduct.id);
+      
+      // Add alias name first (as productAlias)
+      const aliasNameField = aliases.find(alias => alias.key === "Alias Name");
+      if (aliasNameField && aliasNameField.value.trim()) {
+        formData.append('productAlias', aliasNameField.value.trim());
+      }
       
       // Add specifications
       const specsObject = {};
@@ -529,13 +562,17 @@ const TallyProductVariants = () => {
           }
         }, 1000); // 1 second delay
       } else {
-        // Fallback: Update local productData state (without images since we can't predict the new image IDs)
+        // Fallback: Update local productData state
+        const aliasNameField = aliases.find(alias => alias.key === "Alias Name");
+        const updatedProductName = aliasNameField?.value?.trim() || selectedProduct.productName;
+        
         setProductData(prevData => ({
           ...prevData,
           variants: prevData.variants.map(variant => 
             variant.id === selectedProduct.id 
               ? { 
-                  ...variant, 
+                  ...variant,
+                  productName: updatedProductName,
                   productSpecification: specsString,
                   productReview: reviewsString
                 }
@@ -1283,6 +1320,12 @@ const TallyProductVariants = () => {
                 iconPosition="start"
                 sx={{ textTransform: 'none', fontSize: '14px' }}
               />
+              <Tab
+                icon={<Tag size={16} />}
+                label="Alias"
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontSize: '14px' }}
+              />
             </Tabs>
           </Box>
 
@@ -1726,6 +1769,71 @@ const TallyProductVariants = () => {
                         }}
                       />
                     </Box>
+                  </Box>
+                ))}
+              </Box>
+            </TabPanel>
+
+            {/* Alias Tab */}
+            <TabPanel value={tabValue} index={3}>
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#374151",
+                  }}
+                >
+                  Product Alias & Details
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {aliases.map((alias, index) => (
+                  <Box
+                    key={`alias-${index}-${alias.key}`}
+                    sx={{
+                      p: 2,
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "12px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#374151",
+                        mb: 0.5,
+                      }}
+                    >
+                      {alias.key}
+                    </Typography>
+                    <TextField
+                      key={`textfield-${index}`}
+                      fullWidth
+                      size="small"
+                      variant="outlined"
+                      value={alias.value || ""}
+                      onChange={(e) => {
+                        console.log('TextField onChange triggered:', e.target.value);
+                        handleAliasChange(index, "value", e.target.value);
+                      }}
+                      placeholder={`Enter ${alias.key}`}
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          fontSize: "14px",
+                          borderRadius: "8px",
+                          backgroundColor: "#fff",
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "var(--textFieldBorderColor, #ced4da)",
+                          borderRadius: "8px",
+                        },
+                      }}
+                    />
                   </Box>
                 ))}
               </Box>
