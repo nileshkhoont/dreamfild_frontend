@@ -119,6 +119,7 @@ const Dealer = () => {
     email: "",
     number: "",
     password: "",
+    parentId: null,
   });
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedDealerId, setSelectedDealerId] = useState(null);
@@ -240,14 +241,17 @@ const Dealer = () => {
     }
   };
 
-  const handleOpenAddUserDialog = () => {
+  const handleOpenAddUserDialog = (dealer) => {
+    setSelectedDealer(dealer);
+    setAddUserFormData(prev => ({ ...prev, parentId: dealer.id }));
     setOpenAddUserDialog(true);
     handleCloseMenu();
   };
 
   const handleCloseAddUserDialog = () => {
     setOpenAddUserDialog(false);
-    setAddUserFormData({ displayName: "", email: "", number: "", password: "" });
+    setAddUserFormData({ displayName: "", email: "", number: "", password: "", parentId: null });
+    setSelectedDealer(null);
   };
 
   const handleAddUserSubmit = async () => {
@@ -260,6 +264,18 @@ const Dealer = () => {
       });
       return;
     }
+
+    // Validate parentId exists
+    if (!addUserFormData.parentId) {
+      setSnackbar({
+        open: true,
+        message: "Dealer information is missing. Please try again.",
+        severity: "error",
+      });
+      return;
+    }
+
+    console.log('Submitting user data:', addUserFormData);
 
     try {
       await addDealerUser(addUserFormData).unwrap();
@@ -543,7 +559,7 @@ const Dealer = () => {
                             <Tooltip title="Add User">
                               <IconButton
                                 size="small"
-                                onClick={() => handleOpenAddUserDialog()}
+                                onClick={() => handleOpenAddUserDialog(dealer)}
                                 sx={{
                                   color: "var(--purpleShadeBg)",
                                   "&:hover": {
