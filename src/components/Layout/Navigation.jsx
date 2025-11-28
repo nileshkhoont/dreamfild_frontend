@@ -38,6 +38,7 @@ import {
   LocationOff,
   AddLocation,
 } from "@mui/icons-material";
+import Sync from "@mui/icons-material/Sync";
 import PersonIcon from "@mui/icons-material/Person";
 import { MdLogout } from "react-icons/md";
 import { FaRegUserCircle } from "react-icons/fa";
@@ -48,6 +49,7 @@ import {
   usePunchOutMutation,
   useSetLocationMutation,
   useGetLocationQuery,
+  useSyncTallyProductsMutation,
 } from "../../apiService";
 import "../../App.css";
 import { FaLocationDot } from "react-icons/fa6";
@@ -444,6 +446,7 @@ const Navigation = () => {
     usePunchOutMutation();
   const [setLocationMutation, { isLoading: isSettingLocation }] =
     useSetLocationMutation();
+  const [syncTallyProducts, { isLoading: isSyncing }] = useSyncTallyProductsMutation();
 
   // Only call the API if user role is 'user'
   const { data: punchStatusData, isLoading: isPunchStatusLoading } =
@@ -595,6 +598,23 @@ const Navigation = () => {
       return;
     }
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleSync = async () => {
+    try {
+      await syncTallyProducts().unwrap();
+      setSnackbar({
+        open: true,
+        message: "Tally products synced successfully!",
+        severity: "success"
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to sync tally products. Please try again.",
+        severity: "error"
+      });
+    }
   };
 
   // Check if user role is 'user' to show punch buttons
@@ -896,6 +916,10 @@ const Navigation = () => {
     setConfirmAction("out");
     setConfirmDialogOpen(true);
   };
+  const handleSyncClick = () => {
+    setConfirmAction("sync");
+    setConfirmDialogOpen(true);
+  };
   const handleConfirmDialogClose = () => {
     setConfirmDialogOpen(false);
     // Delay resetting confirmAction until dialog is fully closed
@@ -910,6 +934,8 @@ const Navigation = () => {
       await handlePunchIn();
     } else if (confirmAction === "out") {
       await handlePunchOut();
+    } else if (confirmAction === "sync") {
+      await handleSync();
     }
     setConfirmAction("");
   };
@@ -1164,6 +1190,50 @@ const Navigation = () => {
                     </button>
                   )}
 
+                  {/* Sync button styled like Punch Out but different color */}
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={isSyncing}
+                    onClick={handleSyncClick}
+                    sx={{
+  backgroundColor: "rgba(25, 118, 210, 0.12)", // Light and transparent blue
+  color: "#1976d2", // Dark blue text for contrast
+  borderRadius: "12px",
+  fontWeight: 600,
+  fontSize: "14px",
+  textTransform: "none",
+  px: 2.5, // Reduced padding
+  py: 1.25,
+  height: "36px", // Slightly shorter height
+  minWidth: isSmallScreen ? "36px" : "100px", // Reduced width
+  boxShadow: isSyncing ? "none" : "0 1px 4px rgba(25, 118, 210, 0.2)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: isSmallScreen ? 0 : 0.75,
+  ml: 1,
+  opacity: isSyncing ? 0.7 : 1,
+  transition: "all 0.3s ease",
+  border: "1px solid rgba(25, 118, 210, 0.2)", // Subtle border for definition
+  "&:hover": {
+    backgroundColor: "rgba(25, 118, 210, 0.2)", // Slightly more opaque on hover
+    boxShadow: "0 2px 8px rgba(25, 118, 210, 0.3)",
+    borderColor: "rgba(25, 118, 210, 0.4)",
+  },
+}}
+
+                  >
+                    {isSyncing ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <Sync sx={{ fontSize: 20 }} />
+                    )}
+                    {!isSmallScreen && (
+                      <span>{isSyncing ? "Syncing..." : "Sync"}</span>
+                    )}
+                  </Button>
+
 
 
                   <StyledAvatar
@@ -1253,6 +1323,8 @@ const Navigation = () => {
                       </Typography>
                     </Box>
 
+                    
+
                     <CustomMenuItem onClick={() => setLogoutDialogOpen(true)}>
                       <MdLogout
                         size={20}
@@ -1311,7 +1383,11 @@ const Navigation = () => {
             minWidth: 340,
             boxShadow: "0 8px 32px rgba(60,72,100,0.15)",
             borderTop: `6px solid ${
-              confirmAction === "in" ? "#43a047" : "#d32f2f"
+              confirmAction === "in"
+                ? "#43a047"
+                : confirmAction === "out"
+                ? "#d32f2f"
+                : "#1976d2"
             }`,
             background: "#fff",
           },
@@ -1324,12 +1400,21 @@ const Navigation = () => {
             fontSize: "1.15rem",
             pb: 0.5,
             pt: 2,
-            color: confirmAction === "in" ? "#43a047" : "#d32f2f",
+            color:
+              confirmAction === "in"
+                ? "#43a047"
+                : confirmAction === "out"
+                ? "#d32f2f"
+                : "#1976d2",
             textAlign: "center",
             letterSpacing: 0.2,
           }}
         >
-          {confirmAction === "in" ? "Confirm Punch In" : "Confirm Punch Out"}
+          {confirmAction === "in"
+            ? "Confirm Punch In"
+            : confirmAction === "out"
+            ? "Confirm Punch Out"
+            : "Confirm Sync"}
         </DialogTitle>
 
         <DialogContent sx={{ pb: 1, px: 3 }}>
@@ -1344,7 +1429,9 @@ const Navigation = () => {
           >
             {confirmAction === "in"
               ? "Are you sure you want to punch in?"
-              : "Are you sure you want to punch out?"}
+              : confirmAction === "out"
+              ? "Are you sure you want to punch out?"
+              : "Are you sure you want to sync Tally products?"}
           </Typography>
         </DialogContent>
 
@@ -1372,7 +1459,9 @@ const Navigation = () => {
           <Button
             onClick={handleConfirmDialogProceed}
             variant="contained"
-            color={confirmAction === "in" ? "success" : "error"}
+            color={
+              confirmAction === "in" ? "success" : confirmAction === "out" ? "error" : "primary"
+            }
             sx={{
               textTransform: "none",
               fontSize: "0.95rem",
