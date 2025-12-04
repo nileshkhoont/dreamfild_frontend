@@ -137,10 +137,33 @@ const SchemeList = () => {
 
   const getImageUrl = (fileUrl) => {
     if (!fileUrl) return null;
-    // Remove first two slashes: /home/crypto/dealerapi.cryptoinsecticides.com/... 
-    // becomes dealerapi.cryptoinsecticides.com/...
-    const trimmedPath = fileUrl.replace(/^\/[^/]+\/[^/]+\//, "");
-    return `https://${trimmedPath}`;
+    
+    // Check if the URL already starts with http
+    if (fileUrl.startsWith('http')) {
+      return fileUrl;
+    }
+    
+    console.log('Original fileUrl:', fileUrl);
+    
+    let finalUrl = '';
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://dealerapi.cryptoinsecticides.com';
+    
+    // Extract just the filename from the path
+    let filename = '';
+    
+    if (fileUrl.includes('/')) {
+      // Extract filename from path like /home/movya-dealer-backend/uploads/media/file-1763199915625-492039736.jpg
+      const parts = fileUrl.split('/');
+      filename = parts[parts.length - 1];
+    } else {
+      filename = fileUrl;
+    }
+    
+    // Construct the URL
+    finalUrl = `${baseUrl}/uploads/media/${filename}`;
+    
+    console.log('Final image URL:', finalUrl);
+    return finalUrl;
   };
 
   const handleImageClick = (scheme) => {
@@ -160,6 +183,15 @@ const SchemeList = () => {
       imageUrl: "",
       fileName: "",
     });
+  };
+
+  // For debugging: Try to fetch the image with credentials
+  const testImageLoad = (url) => {
+    const img = new Image();
+    // img.crossOrigin = "anonymous"; // Try to enable CORS
+    img.src = url;
+    img.onload = () => console.log('Image loaded successfully:', url);
+    img.onerror = (e) => console.error('Image failed to load:', url, e);
   };
 
   return (
@@ -288,6 +320,12 @@ const SchemeList = () => {
                   <TableBody>
                     {schemeList.map((scheme) => {
                       const imageUrl = getImageUrl(scheme.fileUrl);
+                      
+                      // Test image loading
+                      if (imageUrl) {
+                        testImageLoad(imageUrl);
+                      }
+                      
                       return (
                         <TableRow key={scheme.id}>
                           <TableCell>{scheme.id}</TableCell>
@@ -310,16 +348,62 @@ const SchemeList = () => {
                                   },
                                 }}
                                 onClick={() => handleImageClick(scheme)}
+                                crossOrigin="anonymous" // Try to enable CORS
+                                onError={(e) => {
+                                  console.error('Failed to load image:', imageUrl);
+                                  // Show fallback with file name
+                                  e.target.style.display = 'none';
+                                  const parent = e.target.parentElement;
+                                  parent.innerHTML = `
+                                    <div style="
+                                      width: 60px;
+                                      height: 60px;
+                                      display: flex;
+                                      align-items: center;
+                                      justify-content: center;
+                                      background-color: #f5f5f5;
+                                      border-radius: 4px;
+                                      border: 1px solid #e0e0e0;
+                                      color: #666;
+                                      font-size: 10px;
+                                      text-align: center;
+                                      padding: 4px;
+                                      word-break: break-all;
+                                      overflow: hidden;
+                                    ">
+                                      ${scheme.fileName || 'Preview'}
+                                    </div>
+                                  `;
+                                }}
+                                onLoad={() => console.log('Image loaded successfully:', imageUrl)}
                               />
                             ) : (
-                              <Percent size={40} color="#ccc" />
+                              <Box
+                                sx={{
+                                  width: 60,
+                                  height: 60,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  backgroundColor: "#f5f5f5",
+                                  borderRadius: 1,
+                                  border: "1px solid #e0e0e0",
+                                  color: "#666",
+                                  fontSize: "12px",
+                                  textAlign: "center",
+                                }}
+                              >
+                                Preview
+                              </Box>
                             )}
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 500 }}>{scheme.fileName}</TableCell>
+                          <TableCell sx={{ fontWeight: 500 }}>
+                            {scheme.fileName || 'Unknown file'}
+                          </TableCell>
                           <TableCell>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                               <Chip
-                                label={scheme.status}
+                                label={scheme.status || 'unknown'}
                                 color={getStatusColor(scheme.status)}
                                 size="small"
                                 sx={{
@@ -440,11 +524,25 @@ const SchemeList = () => {
             <img
               src={previewModal.imageUrl}
               alt={previewModal.fileName}
+              crossOrigin="anonymous" // Try to enable CORS
               style={{
                 maxWidth: "100%",
                 maxHeight: "70vh",
                 objectFit: "contain",
                 borderRadius: "8px",
+              }}
+              onError={(e) => {
+                console.error('Failed to load preview image:', previewModal.imageUrl);
+                e.target.style.display = 'none';
+                const parent = e.target.parentElement;
+                parent.innerHTML = `
+                  <div style="text-align: center; padding: 20px;">
+                    <p style="color: red; font-weight: bold;">Failed to load image preview</p>
+                    <p style="font-size: 12px; margin-top: 10px; color: #666;">File: ${previewModal.fileName}</p>
+                    <p style="font-size: 11px; margin-top: 5px; color: #999;">CORS Issue: Backend server needs to allow cross-origin requests</p>
+                    <p style="font-size: 10px; margin-top: 5px; color: #999;">URL: ${previewModal.imageUrl}</p>
+                  </div>
+                `;
               }}
             />
           </Box>
