@@ -18,9 +18,9 @@ import {
   Button,
   Chip,
 } from "@mui/material";
-import { Package, Eye } from "lucide-react";
+import { Package, Eye, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useGetTallyProductsQuery } from "../../apiService";
+import { useGetTallyProductsQuery, useSyncTallyProductsMutation } from "../../apiService";
 
 const Container = styled(Box)({
   margin: "0 auto",
@@ -61,6 +61,8 @@ const TallyProductList = () => {
     refetchOnFocus: true
   });
 
+  const [syncTallyProducts, { isLoading: isSyncing }] = useSyncTallyProductsMutation();
+
   const products = data?.data || [];
   const totalCount = data?.totalCount || 0;
 
@@ -76,6 +78,15 @@ const TallyProductList = () => {
     navigate(`/tally-products/${encodeURIComponent(product.mainProduct)}`, { 
       state: { productData: product } 
     });
+  };
+
+  const handleSync = async () => {
+    try {
+      await syncTallyProducts().unwrap();
+      refetch(); // Refresh the product list after sync
+    } catch (error) {
+      console.error("Failed to sync products:", error);
+    }
   };
 
   return (
@@ -107,6 +118,36 @@ const TallyProductList = () => {
                 Tally Product List
               </Typography>
             </Box>
+          }
+          action={
+            <Button
+              variant="contained"
+              startIcon={isSyncing ? <CircularProgress size={16} color="inherit" /> : <RefreshCw size={16} />}
+              onClick={handleSync}
+              disabled={isSyncing}
+              sx={{
+                backgroundColor: "var(--purpleShadeBg)",
+                color: "#fff",
+                borderRadius: "8px",
+                fontWeight: 500,
+                fontSize: "14px",
+                textTransform: "none",
+                px: 3,
+                py: 1,
+                border: "1px solid rgba(25, 118, 210, 0.2)",
+                "&:hover": {
+                  backgroundColor: "var(--purpleShadeBg)",
+                  opacity: 0.9,
+                },
+                "&:disabled": {
+                  backgroundColor: "rgba(0, 0, 0, 0.08)",
+                  color: "rgba(0, 0, 0, 0.26)",
+                  borderColor: "rgba(0, 0, 0, 0.12)",
+                },
+              }}
+            >
+              {isSyncing ? "Syncing..." : "Sync Products"}
+            </Button>
           }
         />
         <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>

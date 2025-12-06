@@ -49,7 +49,7 @@ import {
   usePunchOutMutation,
   useSetLocationMutation,
   useGetLocationQuery,
-  useSyncTallyProductsMutation,
+  useSyncTallyDataMutation,
 } from "../../apiService";
 import "../../App.css";
 import { FaLocationDot } from "react-icons/fa6";
@@ -446,7 +446,7 @@ const Navigation = () => {
     usePunchOutMutation();
   const [setLocationMutation, { isLoading: isSettingLocation }] =
     useSetLocationMutation();
-  const [syncTallyProducts, { isLoading: isSyncing }] = useSyncTallyProductsMutation();
+  const [syncTallyData, { isLoading: isSyncing }] = useSyncTallyDataMutation();
 
   // Only call the API if user role is 'user'
   const { data: punchStatusData, isLoading: isPunchStatusLoading } =
@@ -602,16 +602,34 @@ const Navigation = () => {
 
   const handleSync = async () => {
     try {
-      await syncTallyProducts().unwrap();
+      // Sync all Tally master data
+      const events = [
+        'fetch_active_company',
+        'fetch_ledgers',
+        'fetch_stock_items',
+        'fetch_sales',
+        'fetch_purchase',
+        'fetch_credit_note',
+        'fetch_debit_note',
+        'fetch_outstanding_receivables',
+        'fetch_payment',
+        'fetch_cash_receipt',
+        'fetch_sale_return',
+        'fetch_cash_discount_journal_voucher',
+        'fetch_special_discount_journal_voucher',
+        'fetch_journal'
+      ];
+      
+      await syncTallyData(events).unwrap();
       setSnackbar({
         open: true,
-        message: "Tally products synced successfully!",
+        message: "Tally data synced successfully!",
         severity: "success"
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: "Failed to sync tally products. Please try again.",
+        message: "Failed to sync tally data. Please try again.",
         severity: "error"
       });
     }
