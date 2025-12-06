@@ -77,6 +77,8 @@ import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import ShareIcon from "@mui/icons-material/Share";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 
 // 1. Update the menuItems array with different icons:
 const menuItems = [
@@ -127,6 +129,12 @@ const menuItems = [
     label: "Banks",
     icon: AccountBalanceOutlinedIcon,
     activeIcon: AccountBalanceIcon,
+  },
+  {
+    path: "/category",
+    label: "Category",
+    icon: ListAltOutlinedIcon,
+    activeIcon: ListAltIcon,
   },
    {
     path: "/orders",
