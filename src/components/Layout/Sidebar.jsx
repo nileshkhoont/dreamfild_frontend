@@ -879,7 +879,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
                     }}
                   >
                     <img
-                      src={"/public/favicon.ico"}
+                      src={"/public/CRYPTO_ICON.png"}
                       alt={"Crypto"}
                       style={{
                         maxWidth: "100%",
