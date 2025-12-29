@@ -175,6 +175,41 @@ const StyledIconWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const Navigation = () => {
+  // Helper function to build full image URL
+  const getImageUrl = (fileUrl) => {
+    if (!fileUrl) return '';
+    
+    // Check if the URL already starts with http
+    if (fileUrl.startsWith('http')) {
+      return fileUrl;
+    }
+    
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://dealerapi.cryptoinsecticides.com';
+    
+    // Extract just the filename from the path
+    let filename = '';
+    
+    if (fileUrl.includes('/')) {
+      // Extract filename from path
+      const parts = fileUrl.split('/');
+      filename = parts[parts.length - 1];
+      
+      // Find if there's an "uploads" folder in the path
+      const uploadsIndex = fileUrl.indexOf('uploads/');
+      if (uploadsIndex !== -1) {
+        // Extract path from uploads onward
+        const uploadsPath = fileUrl.substring(uploadsIndex);
+        return `${baseUrl}/${uploadsPath}`;
+      } else {
+        // Fallback: use just the filename
+        return `${baseUrl}/uploads/media/${filename}`;
+      }
+    } else {
+      filename = fileUrl;
+      return `${baseUrl}/uploads/media/${filename}`;
+    }
+  };
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const [locationError, setLocationError] = useState(null);
@@ -1268,7 +1303,7 @@ const Navigation = () => {
                   >
                     {currentUser?.profilePhoto ? (
                       <img
-                        src={currentUser.profilePhoto}
+                        src={getImageUrl(currentUser.profilePhoto)}
                         alt={currentUser.name || "Profile"}
                         style={{
                           width: "100%",
