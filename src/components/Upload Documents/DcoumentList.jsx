@@ -86,6 +86,41 @@ const DocumentList = () => {
     ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"].includes(type);
   const isPdf = (type) => type === "application/pdf";
 
+  // Helper function to build full image URL
+  const getImageUrl = (fileUrl) => {
+    if (!fileUrl) return '';
+    
+    // Check if the URL already starts with http
+    if (fileUrl.startsWith('http')) {
+      return fileUrl;
+    }
+    
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://dealerapi.cryptoinsecticides.com';
+    
+    // Extract just the filename from the path
+    let filename = '';
+    
+    if (fileUrl.includes('/')) {
+      // Extract filename from path
+      const parts = fileUrl.split('/');
+      filename = parts[parts.length - 1];
+      
+      // Find if there's an "uploads" folder in the path
+      const uploadsIndex = fileUrl.indexOf('uploads/');
+      if (uploadsIndex !== -1) {
+        // Extract path from uploads onward
+        const uploadsPath = fileUrl.substring(uploadsIndex);
+        return `${baseUrl}/${uploadsPath}`;
+      } else {
+        // Fallback: use just the filename
+        return `${baseUrl}/uploads/media/${filename}`;
+      }
+    } else {
+      filename = fileUrl;
+      return `${baseUrl}/uploads/media/${filename}`;
+    }
+  };
+
   
   return (
     <Container>
@@ -261,7 +296,7 @@ const DocumentList = () => {
                       
                       <CardActionArea
                         onClick={() => {
-                          setPreviewSrc(doc.fileUrl);
+                          setPreviewSrc(getImageUrl(doc.fileUrl));
                           setPreviewOpen(true);
                         }}
                         sx={{ 
@@ -277,7 +312,7 @@ const DocumentList = () => {
                       >
                         {isImage(doc.fileType) ? (
                           <img
-                            src={doc.fileUrl}
+                            src={getImageUrl(doc.fileUrl)}
                             alt={doc.documentName}
                             style={{
                               maxWidth: "100%",
