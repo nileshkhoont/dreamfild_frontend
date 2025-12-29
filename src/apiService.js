@@ -679,7 +679,21 @@ export const apiSlice = createApi({
       invalidatesTags: ["TallyProducts"],
     }),
 
-   
+    syncTallyProducts: builder.mutation({
+      query: () => ({
+        url: "/tally-products/sync",
+        method: "POST",
+      }),
+      invalidatesTags: ["TallyProducts"],
+    }),
+
+    syncTallyData: builder.mutation({
+      query: (eventArray) => ({
+        url: "/tally",
+        method: "POST",
+        body: { event: eventArray },
+      }),
+    }),
 
     // Add these new endpoints in the endpoints section
     getTallyLedgers: builder.query({
@@ -782,6 +796,8 @@ export const {
   useGetTallyProductsQuery,
   useGetTallyProductByNameQuery,
   useUpdateTallyProductMutation,
+  useSyncTallyProductsMutation,
+  useSyncTallyDataMutation,
 
   // Add these missing exports
   useGetTallyLedgersQuery,

@@ -26,6 +26,7 @@ import SchemeList from "./components/Scheme/SchemeList"; // <-- Add SchemeList i
 import TallyProductList from "./components/TallyProduct/TallyProductList"; // <-- Add this import
 import TallyProductVariants from "./components/TallyProduct/TallyProductVariants";
 import Orders from "./components/TallyOrders/Orders"; // <-- Add Orders import
+import Category from "./components/Category/Category"; // <-- Add Category import
 
 const AppRoutes = () => {
   return (
@@ -67,6 +68,7 @@ const AppRoutes = () => {
               <Route path="/social-media" element={<SocialMedia />} />
               <Route path="/tally-orders" element={<TallyOrders />} />
               <Route path="/banks" element={<Bank />} />
+              <Route path="/category" element={<Category />} /> {/* <-- Add Category route */}
               <Route path="/media" element={<MediaList />} /> {/* <-- Add this line */}
               <Route path="/scheme" element={<SchemeList />} /> {/* <-- Add scheme route */}
               <Route path="/tally-products" element={<TallyProductList />} /> {/* <-- Add this line */}
