@@ -871,16 +871,16 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
               <>
              <Box
                     sx={{
-                      maxWidth: { xs: 15, sm: 25, md: 25 },  
-                      maxHeight: 32,
+                      maxWidth: { xs: 40, sm: 50, md: 60 },  
+                      maxHeight: 60,
                       display: "flex",
                       alignItems: "center",
                       ml: 1.5,
                     }}
                   >
                     <img
-                      src={"/CRYPTO_ICON.png"}
-                      alt={"Crypto"}
+                      src={"/LOGO.png"}
+                      alt={"Dreamfield"}
                       style={{
                         maxWidth: "100%",
                         maxHeight: "100%",
@@ -899,7 +899,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
                       fontSize: "0.95rem",
                     }}
                   >
-                    {"Crypto"}
+                    {"Dreamfield"}
                   </Typography>
                 )}
               </>

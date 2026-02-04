@@ -812,7 +812,7 @@ function Home() {
           <Paper
             sx={{
               p: 2,
-              backgroundColor: "#197743",
+              backgroundColor: "blue",
               color: "white",
               borderRadius: 2,
               boxShadow: "none",
@@ -851,7 +851,7 @@ function Home() {
           <Paper
             sx={{
               p: 2,
-              backgroundColor: "#197743",
+              backgroundColor: "blue",
               color: "white",
               borderRadius: 2,
               boxShadow: "none",
@@ -891,7 +891,7 @@ function Home() {
             elevation={0}
             sx={{
               p: 2,
-              backgroundColor: "#197743",
+              backgroundColor: "blue",
               color: "white",
               borderRadius: 2,
               boxShadow: "none",

@@ -115,7 +115,7 @@ const Bank = () => {
   };
 
   const getStatusColor = (status) => {
-    return status?.toLowerCase() === "active" ? "success" : "default";
+    return status?.toLowerCase() === "active" ? "primary" : "default";
   };
 
   return (
@@ -261,6 +261,10 @@ const Bank = () => {
                             textTransform: "capitalize",
                             fontWeight: 500,
                             borderRadius: "8px",
+                            ...(bank.status?.toLowerCase() === "active" && {
+                              backgroundColor: "#2563eb",
+                              color: "white",
+                            }),
                           }}
                         />
                       </TableCell>

@@ -510,6 +510,10 @@ const Dealer = () => {
                                 textTransform: "capitalize",
                                 fontWeight: 500,
                                 borderRadius: "8px",
+                                ...(dealer.status?.toLowerCase() === "active" && {
+                                  backgroundColor: "#2563eb",
+                                  color: "white",
+                                }),
                               }}
                             />
                             <Tooltip

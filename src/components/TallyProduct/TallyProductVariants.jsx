@@ -361,7 +361,7 @@ const TallyProductVariants = () => {
   }
 
   const getStatusColor = (status) => {
-    return status?.toLowerCase() === "active" ? "success" : "default";
+    return status?.toLowerCase() === "active" ? "primary" : "default";
   };
 
   const handleSpecificationChange = (index, field, value) => {
@@ -931,6 +931,10 @@ const TallyProductVariants = () => {
                             textTransform: "capitalize",
                             fontWeight: 500,
                             borderRadius: "8px",
+                            ...(variant.status?.toLowerCase() === "active" && {
+                              backgroundColor: "#2563eb",
+                              color: "white",
+                            }),
                           }}
                         />
                       </Box>

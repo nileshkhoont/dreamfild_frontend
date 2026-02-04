@@ -132,7 +132,7 @@ const SchemeList = () => {
   };
 
   const getStatusColor = (status) => {
-    return status?.toLowerCase() === "active" ? "success" : "default";
+    return status?.toLowerCase() === "active" ? "primary" : "default";
   };
 
   const getImageUrl = (fileUrl) => {
@@ -410,6 +410,10 @@ const SchemeList = () => {
                                   textTransform: "capitalize",
                                   fontWeight: 500,
                                   borderRadius: "8px",
+                                  ...(scheme.status?.toLowerCase() === "active" && {
+                                    backgroundColor: "#2563eb",
+                                    color: "white",
+                                  }),
                                 }}
                               />
                               <Tooltip

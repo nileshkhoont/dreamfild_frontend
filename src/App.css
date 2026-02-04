@@ -138,8 +138,8 @@ body {
   --redShadeBg: #ffe3e4;
   --redShadeColor: #ff4d52;
 
-  --greenShadeBg: #daf5e6;
-  --greenShadeColor: #28c76f;
+  --greenShadeBg: #dbeafe;
+  --greenShadeColor: #2563eb;
 
   --yellowShadeBg: #ffefe0;
   --yellowShadeColor: #ff9e42;
@@ -162,8 +162,8 @@ body {
   /*Card box Shadow*/
   --cardBoxShadow: rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px;
 
-  --successTextColor: #2e7d32;
-  --successBgColor: #eaf2ea;
+  --successTextColor: #2563eb;
+  --successBgColor: #dbeafe;
 
 
 

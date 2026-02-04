@@ -132,7 +132,7 @@ const MediaList = () => {
   };
 
   const getStatusColor = (status) => {
-    return status?.toLowerCase() === "active" ? "success" : "default";
+    return status?.toLowerCase() === "active" ? "primary" : "default";
   };
 
   const getImageUrl = (fileUrl) => {
@@ -418,6 +418,10 @@ const MediaList = () => {
                                   textTransform: "capitalize",
                                   fontWeight: 500,
                                   borderRadius: "8px",
+                                  ...(media.status?.toLowerCase() === "active" && {
+                                    backgroundColor: "#2563eb",
+                                    color: "white",
+                                  }),
                                 }}
                               />
                               <Tooltip
