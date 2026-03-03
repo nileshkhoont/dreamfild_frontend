@@ -879,7 +879,7 @@ export default function Sidebar({ drawerWidth = 260, openParent, setOpenParent }
                     }}
                   >
                     <img
-                      src={"/LOGO.png"}
+                      src={"/logo.png"}
                       alt={"Dreamfield"}
                       style={{
                         maxWidth: "100%",
