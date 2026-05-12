@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -18,8 +18,17 @@ import {
   IconButton,
   Collapse,
   Chip,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { FileText, ChevronDown, ChevronUp, Package, Receipt } from "lucide-react";
+import {
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Receipt,
+  Search,
+} from "lucide-react";
 import { useGetTallyOrdersQuery } from "../../apiService";
 
 const Container = styled(Box)({
@@ -84,7 +93,10 @@ const ExpandableRow = ({ row }) => {
             }}
           />
         </TableCell>
-        <TableCell align="right" sx={{ fontWeight: 600, color: "var(--purpleShadeBg)" }}>
+        <TableCell
+          align="right"
+          sx={{ fontWeight: 600, color: "var(--purpleShadeBg)" }}
+        >
           ₹{row.grandTotal}
         </TableCell>
       </TableRow>
@@ -123,7 +135,9 @@ const ExpandableRow = ({ row }) => {
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                        <TableCell sx={{ fontWeight: 600 }}>Item Name</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>
+                          Item Name
+                        </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>
                           Actual Qty
                         </TableCell>
@@ -188,7 +202,9 @@ const ExpandableRow = ({ row }) => {
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                        <TableCell sx={{ fontWeight: 600 }}>Ledger Name</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>
+                          Ledger Name
+                        </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>
                           Amount
                         </TableCell>
@@ -241,6 +257,8 @@ const ExpandableRow = ({ row }) => {
 };
 
 const TallyOrders = () => {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -248,6 +266,7 @@ const TallyOrders = () => {
     page: page + 1,
     limit: rowsPerPage,
     event: "fetch_sales",
+    search: debouncedSearch, // ← pass to query
   });
 
   const orders = data?.data || [];
@@ -261,6 +280,14 @@ const TallyOrders = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   return (
     <Container>
@@ -276,20 +303,13 @@ const TallyOrders = () => {
       >
         <CardHeader
           title={
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <FileText size={22} color="var(--textColor)" />
               <Typography
                 variant="h5"
                 sx={{
                   fontWeight: 600,
                   color: "var(--textColor)",
-                  textAlign: "left",
                   fontSize: "22px",
                 }}
                 component="span"
@@ -298,8 +318,37 @@ const TallyOrders = () => {
               </Typography>
             </Box>
           }
+          action={
+            <TextField
+              size="small"
+              placeholder="Search party name or invoice..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{
+                width: 320,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "10px",
+                  backgroundColor: "#fff",
+                  height: "42px",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "var(--textFieldBorderColor, #ced4da)",
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={18} color="#666" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          }
         />
-        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+
+        <CardContent
+          sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+        >
           {isLoading ? (
             <Box
               sx={{

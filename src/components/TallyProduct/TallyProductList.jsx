@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -17,10 +17,15 @@ import {
   CircularProgress,
   Button,
   Chip,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { Package, Eye, RefreshCw } from "lucide-react";
+import { Package, Eye, RefreshCw, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useGetTallyProductsQuery, useSyncTallyProductsMutation } from "../../apiService";
+import {
+  useGetTallyProductsQuery,
+  useSyncTallyProductsMutation,
+} from "../../apiService";
 
 const Container = styled(Box)({
   margin: "0 auto",
@@ -48,20 +53,27 @@ const StyledTableContainer = styled(TableContainer)({
 });
 
 const TallyProductList = () => {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const navigate = useNavigate();
 
   // Add refetchOnMountOrArgChange to ensure fresh data
-  const { data, isLoading, refetch } = useGetTallyProductsQuery({ 
-    page: page + 1, 
-    limit: rowsPerPage 
-  }, {
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: true
-  });
+  const { data, isLoading, refetch } = useGetTallyProductsQuery(
+    {
+      page: page + 1,
+      limit: rowsPerPage,
+      searchByName: debouncedSearch,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    },
+  );
 
-  const [syncTallyProducts, { isLoading: isSyncing }] = useSyncTallyProductsMutation();
+  const [syncTallyProducts, { isLoading: isSyncing }] =
+    useSyncTallyProductsMutation();
 
   const products = data?.data || [];
   const totalCount = data?.totalCount || 0;
@@ -75,8 +87,8 @@ const TallyProductList = () => {
   const handleViewMore = (product) => {
     // Navigate to variants page with product data
     // Use encodeURIComponent to handle special characters in product names
-    navigate(`/tally-products/${encodeURIComponent(product.mainProduct)}`, { 
-      state: { productData: product } 
+    navigate(`/tally-products/${encodeURIComponent(product.mainProduct)}`, {
+      state: { productData: product },
     });
   };
 
@@ -88,6 +100,14 @@ const TallyProductList = () => {
       console.error("Failed to sync products:", error);
     }
   };
+
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(search);
+  }, 500); // 500ms delay
+
+  return () => clearTimeout(timer);
+}, [search]);
 
   return (
     <Container>
@@ -120,37 +140,73 @@ const TallyProductList = () => {
             </Box>
           }
           action={
-            <Button
-              variant="contained"
-              startIcon={isSyncing ? <CircularProgress size={16} color="inherit" /> : <RefreshCw size={16} />}
-              onClick={handleSync}
-              disabled={isSyncing}
-              sx={{
-                backgroundColor: "var(--purpleShadeBg)",
-                color: "#fff",
-                borderRadius: "8px",
-                fontWeight: 500,
-                fontSize: "14px",
-                textTransform: "none",
-                px: 3,
-                py: 1,
-                border: "1px solid rgba(25, 118, 210, 0.2)",
-                "&:hover": {
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <TextField
+                size="small"
+                placeholder="Search product..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                sx={{
+                  width: 320,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px",
+                    backgroundColor: "#fff",
+                    height: "42px",
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search size={18} color="#666" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                variant="contained"
+                startIcon={
+                  isSyncing ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )
+                }
+                onClick={handleSync}
+                disabled={isSyncing}
+                sx={{
                   backgroundColor: "var(--purpleShadeBg)",
-                  opacity: 0.9,
-                },
-                "&:disabled": {
-                  backgroundColor: "rgba(0, 0, 0, 0.08)",
-                  color: "rgba(0, 0, 0, 0.26)",
-                  borderColor: "rgba(0, 0, 0, 0.12)",
-                },
-              }}
-            >
-              {isSyncing ? "Syncing..." : "Sync Products"}
-            </Button>
+                  color: "#fff",
+                  borderRadius: "8px",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  textTransform: "none",
+                  px: 3,
+                  py: 1,
+                  border: "1px solid rgba(25, 118, 210, 0.2)",
+                  height: "42px",
+                  "&:hover": {
+                    backgroundColor: "var(--purpleShadeBg)",
+                    opacity: 0.9,
+                  },
+                  "&:disabled": {
+                    backgroundColor: "rgba(0, 0, 0, 0.08)",
+                    color: "rgba(0, 0, 0, 0.26)",
+                    borderColor: "rgba(0, 0, 0, 0.12)",
+                  },
+                }}
+              >
+                {isSyncing ? "Syncing..." : "Sync Products"}
+              </Button>
+            </Box>
           }
         />
-        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <CardContent
+          sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+        >
           {isLoading ? (
             <Box
               sx={{
@@ -212,8 +268,18 @@ const TallyProductList = () => {
                         <TableCell>
                           {product.variants?.length > 0 && (
                             <Typography variant="body2" sx={{ color: "#666" }}>
-                              ₹{Math.min(...product.variants.map(v => parseFloat(v.price) || 0))} - 
-                              ₹{Math.max(...product.variants.map(v => parseFloat(v.price) || 0))}
+                              ₹
+                              {Math.min(
+                                ...product.variants.map(
+                                  (v) => parseFloat(v.price) || 0,
+                                ),
+                              )}{" "}
+                              - ₹
+                              {Math.max(
+                                ...product.variants.map(
+                                  (v) => parseFloat(v.price) || 0,
+                                ),
+                              )}
                             </Typography>
                           )}
                         </TableCell>

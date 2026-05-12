@@ -48,8 +48,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
     // Only logout on authentication errors
     if (
-      (
-        result?.error?.status === 403 ||
+      (result?.error?.status === 403 ||
         result?.error?.data?.status === "account_disabled" ||
         result?.error?.data?.responseMessage === "Account disabled") &&
       !endpoint.includes("/login")
@@ -66,7 +65,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     if (
       result?.error?.status === 404 &&
       result?.error?.data?.responseMessage ===
-      "User not found. Please remove the old token and try again."
+        "User not found. Please remove the old token and try again."
     ) {
       const refreshToken = localStorage.getItem("refreshToken");
       const currentToken = localStorage.getItem("jwt");
@@ -89,7 +88,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
           },
         },
         api,
-        extraOptions
+        extraOptions,
       );
 
       if (refreshResult.data) {
@@ -149,8 +148,8 @@ export const apiSlice = createApi({
       },
     }),
     getDealers: builder.query({
-      query: ({ page = 1, limit = 10 }) => ({
-        url: `/dealer?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 10, search = "" }) => ({
+        url: `/dealer?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
         method: "GET",
       }),
       providesTags: ["Dealers"],
@@ -200,8 +199,13 @@ export const apiSlice = createApi({
     }),
 
     getTallyOrders: builder.query({
-      query: ({ page = 1, limit = 10, event = "fetch_sales" }) => ({
-        url: `/tally/fetch-master-data?event=${event}&page=${page}&limit=${limit}`,
+      query: ({
+        page = 1,
+        limit = 10,
+        event = "fetch_sales",
+        search = "",
+      }) => ({
+        url: `/tally/fetch-master-data?event=${event}&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
         method: "GET",
       }),
       providesTags: ["TallyOrders"],
@@ -241,7 +245,6 @@ export const apiSlice = createApi({
       invalidatesTags: ["Banks"],
     }),
 
-
     getAttendance: builder.mutation({
       query: (body) => ({
         url: "/attendance/summary",
@@ -270,7 +273,11 @@ export const apiSlice = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Dashboard", "PendingWorkFromHome", "PendingPunchoutRequests"], // Add all relevant tags
+      invalidatesTags: [
+        "Dashboard",
+        "PendingWorkFromHome",
+        "PendingPunchoutRequests",
+      ], // Add all relevant tags
     }),
 
     // not using this
@@ -627,7 +634,7 @@ export const apiSlice = createApi({
     getMedia: builder.query({
       query: ({ page = 1, limit = 10, type = "Media" } = {}) => ({
         url: `/media?page=${page}&limit=${limit}&type=${encodeURIComponent(
-          type
+          type,
         )}`,
         method: "GET",
       }),
@@ -656,8 +663,8 @@ export const apiSlice = createApi({
     // --- MEDIA MODULE END ---
 
     getTallyProducts: builder.query({
-      query: ({ page = 1, limit = 10 }) => ({
-        url: `/tally-products?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 10, searchByName = "" }) => ({
+        url: `/tally-products?page=${page}&limit=${limit}&searchByName=${encodeURIComponent(searchByName)}`,
         method: "GET",
       }),
       providesTags: ["TallyProducts"],
@@ -671,7 +678,7 @@ export const apiSlice = createApi({
     }),
     updateTallyProduct: builder.mutation({
       query: (formData) => ({
-        url: `/tally-products/${formData.get('id')}`,
+        url: `/tally-products/${formData.get("id")}`,
         method: "PUT",
         body: formData,
         // Remove the headers - let the browser set them automatically for FormData
@@ -802,6 +809,6 @@ export const {
   // Add these missing exports
   useGetTallyLedgersQuery,
   useCreatePartyLedgerMappingMutation,
-  
+
   useGetOrdersQuery,
 } = apiSlice;

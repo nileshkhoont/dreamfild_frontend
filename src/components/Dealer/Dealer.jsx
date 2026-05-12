@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -37,7 +37,16 @@ import {
   ImageListItem,
   ImageListItemBar,
 } from "@mui/material";
-import { Plus, Edit2, Trash2, User, Users, Eye, Link } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  User,
+  Users,
+  Eye,
+  Link,
+  Search,
+} from "lucide-react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -99,6 +108,8 @@ const ImagePreview = styled("img")({
 });
 
 const Dealer = () => {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
@@ -129,17 +140,31 @@ const Dealer = () => {
     severity: "success",
   });
 
-  const { data, isLoading, refetch } = useGetDealersQuery({ page: page + 1, limit: rowsPerPage });
-  const [registerDealer, { isLoading: isSubmitting }] = useRegisterDealerMutation();
-  const [updateDealerStatus] = useUpdateDealerStatusMutation();
-  const [addDealerUser, { isLoading: isUserAdding }] = useAddDealerUserMutation();
-  
-  // New queries for ledger functionality
-  const { data: ledgerData, isLoading: isLoadingLedgers } = useGetTallyLedgersQuery(
-    { event: "fetch_ledgers" },
-    { skip: !openLedgerMappingDialog }
+  const { data, isLoading, refetch } = useGetDealersQuery(
+    {
+      page: page + 1,
+      limit: rowsPerPage,
+      search: debouncedSearch,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    },
   );
-  const [createPartyLedgerMapping, { isLoading: isCreatingMapping }] = useCreatePartyLedgerMappingMutation();
+  const [registerDealer, { isLoading: isSubmitting }] =
+    useRegisterDealerMutation();
+  const [updateDealerStatus] = useUpdateDealerStatusMutation();
+  const [addDealerUser, { isLoading: isUserAdding }] =
+    useAddDealerUserMutation();
+
+  // New queries for ledger functionality
+  const { data: ledgerData, isLoading: isLoadingLedgers } =
+    useGetTallyLedgersQuery(
+      { event: "fetch_ledgers" },
+      { skip: !openLedgerMappingDialog },
+    );
+  const [createPartyLedgerMapping, { isLoading: isCreatingMapping }] =
+    useCreatePartyLedgerMappingMutation();
 
   const dealers = data?.data || [];
   const totalCount = data?.totalCount || 0;
@@ -160,8 +185,8 @@ const Dealer = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     // Allow only numbers for phone number field and limit to 10 digits
-    if (name === 'number') {
-      const numericValue = value.replace(/\D/g, '');
+    if (name === "number") {
+      const numericValue = value.replace(/\D/g, "");
       if (numericValue.length <= 10) {
         setFormData((prev) => ({ ...prev, [name]: numericValue }));
       }
@@ -173,8 +198,8 @@ const Dealer = () => {
   const handleAddUserInputChange = (e) => {
     const { name, value } = e.target;
     // Allow only numbers for phone number field and limit to 10 digits
-    if (name === 'number') {
-      const numericValue = value.replace(/\D/g, '');
+    if (name === "number") {
+      const numericValue = value.replace(/\D/g, "");
       if (numericValue.length <= 10) {
         setAddUserFormData((prev) => ({ ...prev, [name]: numericValue }));
       }
@@ -243,14 +268,20 @@ const Dealer = () => {
 
   const handleOpenAddUserDialog = (dealer) => {
     setSelectedDealer(dealer);
-    setAddUserFormData(prev => ({ ...prev, parentId: dealer.id }));
+    setAddUserFormData((prev) => ({ ...prev, parentId: dealer.id }));
     setOpenAddUserDialog(true);
     handleCloseMenu();
   };
 
   const handleCloseAddUserDialog = () => {
     setOpenAddUserDialog(false);
-    setAddUserFormData({ displayName: "", email: "", number: "", password: "", parentId: null });
+    setAddUserFormData({
+      displayName: "",
+      email: "",
+      number: "",
+      password: "",
+      parentId: null,
+    });
     setSelectedDealer(null);
   };
 
@@ -275,7 +306,7 @@ const Dealer = () => {
       return;
     }
 
-    console.log('Submitting user data:', addUserFormData);
+    console.log("Submitting user data:", addUserFormData);
 
     try {
       await addDealerUser(addUserFormData).unwrap();
@@ -295,14 +326,14 @@ const Dealer = () => {
     }
   };
 
-    const getImageUrl = (fileUrl) => {
+  const getImageUrl = (fileUrl) => {
     if (!fileUrl) return null;
     // Check if the URL already starts with http
-    if (fileUrl.startsWith('http')) {
+    if (fileUrl.startsWith("http")) {
       return fileUrl;
     }
     // Use the correct environment variable name
-    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4100';
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4100";
     return `${baseUrl}${fileUrl}`;
   };
 
@@ -355,7 +386,7 @@ const Dealer = () => {
         partyLedgerName: selectedLedger.ledgerName,
         partyLedgerGUID: selectedLedger.ledgerGUID,
       }).unwrap();
-      
+
       setSnackbar({
         open: true,
         message: "Party ledger mapping created successfully!",
@@ -374,6 +405,15 @@ const Dealer = () => {
   const getStatusColor = (status) => {
     return status?.toLowerCase() === "active" ? "success" : "default";
   };
+
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(search);
+    setPage(0); // ← Move page reset here, so it updates atomically with debouncedSearch
+  }, 500);
+
+  return () => clearTimeout(timer);
+}, [search]);
 
   return (
     <Container>
@@ -401,8 +441,9 @@ const Dealer = () => {
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 1,
                   justifyContent: "space-between",
+                  gap: 2,
+                  flexWrap: "wrap",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -420,6 +461,42 @@ const Dealer = () => {
                     Dealer List
                   </Typography>
                 </Box>
+
+                 <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Search Field */}
+          <TextField
+            size="small"
+            placeholder="Search dealer..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            sx={{
+              width: 320,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                backgroundColor: "#fff",
+                height: "42px",
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "var(--textFieldBorderColor, #ced4da)",
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} color="#666" />
+                </InputAdornment>
+              ),
+            }}
+          />
                 <Button
                   variant="contained"
                   color="primary"
@@ -447,9 +524,13 @@ const Dealer = () => {
                 </Button>
               </Box>
             </Box>
+                </Box>
+
           }
         />
-        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <CardContent
+          sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+        >
           {isLoading ? (
             <Box
               sx={{
@@ -497,11 +578,19 @@ const Dealer = () => {
                     {dealers.map((dealer) => (
                       <TableRow key={dealer.id}>
                         <TableCell>{dealer.id}</TableCell>
-                        <TableCell sx={{ fontWeight: 500 }}>{dealer.displayName}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>
+                          {dealer.displayName}
+                        </TableCell>
                         <TableCell>{dealer.email}</TableCell>
                         <TableCell>{dealer.number}</TableCell>
                         <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <Chip
                               label={dealer.status}
                               color={getStatusColor(dealer.status)}
@@ -510,7 +599,8 @@ const Dealer = () => {
                                 textTransform: "capitalize",
                                 fontWeight: 500,
                                 borderRadius: "8px",
-                                ...(dealer.status?.toLowerCase() === "active" && {
+                                ...(dealer.status?.toLowerCase() ===
+                                  "active" && {
                                   backgroundColor: "#2563eb",
                                   color: "white",
                                 }),
@@ -518,7 +608,9 @@ const Dealer = () => {
                             />
                             <Tooltip
                               title={`Toggle to ${
-                                dealer.status === "active" ? "deactive" : "active"
+                                dealer.status === "active"
+                                  ? "deactive"
+                                  : "active"
                               }`}
                             >
                               <Switch
@@ -545,11 +637,19 @@ const Dealer = () => {
                             : "-"}
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              justifyContent: "center",
+                            }}
+                          >
                             <Tooltip title="View Details">
                               <IconButton
                                 size="small"
-                                onClick={() => handleOpenViewDetailsDialog(dealer)}
+                                onClick={() =>
+                                  handleOpenViewDetailsDialog(dealer)
+                                }
                                 sx={{
                                   color: "var(--purpleShadeBg)",
                                   "&:hover": {
@@ -577,7 +677,9 @@ const Dealer = () => {
                             <Tooltip title="Link Ledger">
                               <IconButton
                                 size="small"
-                                onClick={() => handleOpenLedgerMappingDialog(dealer)}
+                                onClick={() =>
+                                  handleOpenLedgerMappingDialog(dealer)
+                                }
                                 sx={{
                                   color: "var(--purpleShadeBg)",
                                   "&:hover": {
@@ -670,7 +772,7 @@ const Dealer = () => {
                   Dealer Information
                 </Typography>
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Typography
                   variant="body2"
@@ -1010,7 +1112,9 @@ const Dealer = () => {
               </Grid>
 
               {/* Images Section - Only show if at least one image exists */}
-              {(selectedDealer.shopImage || selectedDealer.pesticideLicenseImage || selectedDealer.fertilizerLicenseImage) && (
+              {(selectedDealer.shopImage ||
+                selectedDealer.pesticideLicenseImage ||
+                selectedDealer.fertilizerLicenseImage) && (
                 <>
                   <Grid item xs={12}>
                     <Divider sx={{ my: 2 }} />
@@ -1042,23 +1146,35 @@ const Dealer = () => {
                       </Typography>
                       <ImageContainer
                         onClick={() => {
-                          const imageUrl = getImageUrl(selectedDealer.shopImage);
-                          if (imageUrl) window.open(imageUrl, '_blank');
+                          const imageUrl = getImageUrl(
+                            selectedDealer.shopImage,
+                          );
+                          if (imageUrl) window.open(imageUrl, "_blank");
                         }}
                       >
-                        <ImagePreview 
+                        <ImagePreview
                           src={getImageUrl(selectedDealer.shopImage)}
                           alt="Shop Image"
                           onError={(e) => {
-                            console.error('Failed to load shop image:', e.target.src);
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            console.error(
+                              "Failed to load shop image:",
+                              e.target.src,
+                            );
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
                           }}
                           onLoad={() => {
-                            console.log('Shop image loaded successfully');
+                            console.log("Shop image loaded successfully");
                           }}
                         />
-                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <Box
+                          sx={{
+                            display: "none",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                          }}
+                        >
                           <Typography variant="body2" color="#666">
                             Image not found
                           </Typography>
@@ -1083,23 +1199,39 @@ const Dealer = () => {
                       </Typography>
                       <ImageContainer
                         onClick={() => {
-                          const imageUrl = getImageUrl(selectedDealer.pesticideLicenseImage);
-                          if (imageUrl) window.open(imageUrl, '_blank');
+                          const imageUrl = getImageUrl(
+                            selectedDealer.pesticideLicenseImage,
+                          );
+                          if (imageUrl) window.open(imageUrl, "_blank");
                         }}
                       >
-                        <ImagePreview 
-                          src={getImageUrl(selectedDealer.pesticideLicenseImage)}
+                        <ImagePreview
+                          src={getImageUrl(
+                            selectedDealer.pesticideLicenseImage,
+                          )}
                           alt="Pesticide License"
                           onError={(e) => {
-                            console.error('Failed to load pesticide license image:', e.target.src);
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            console.error(
+                              "Failed to load pesticide license image:",
+                              e.target.src,
+                            );
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
                           }}
                           onLoad={() => {
-                            console.log('Pesticide license image loaded successfully');
+                            console.log(
+                              "Pesticide license image loaded successfully",
+                            );
                           }}
                         />
-                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <Box
+                          sx={{
+                            display: "none",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                          }}
+                        >
                           <Typography variant="body2" color="#666">
                             Image not found
                           </Typography>
@@ -1124,23 +1256,39 @@ const Dealer = () => {
                       </Typography>
                       <ImageContainer
                         onClick={() => {
-                          const imageUrl = getImageUrl(selectedDealer.fertilizerLicenseImage);
-                          if (imageUrl) window.open(imageUrl, '_blank');
+                          const imageUrl = getImageUrl(
+                            selectedDealer.fertilizerLicenseImage,
+                          );
+                          if (imageUrl) window.open(imageUrl, "_blank");
                         }}
                       >
-                        <ImagePreview 
-                          src={getImageUrl(selectedDealer.fertilizerLicenseImage)}
+                        <ImagePreview
+                          src={getImageUrl(
+                            selectedDealer.fertilizerLicenseImage,
+                          )}
                           alt="Fertilizer License"
                           onError={(e) => {
-                            console.error('Failed to load fertilizer license image:', e.target.src);
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            console.error(
+                              "Failed to load fertilizer license image:",
+                              e.target.src,
+                            );
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
                           }}
                           onLoad={() => {
-                            console.log('Fertilizer license image loaded successfully');
+                            console.log(
+                              "Fertilizer license image loaded successfully",
+                            );
                           }}
                         />
-                        <Box sx={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <Box
+                          sx={{
+                            display: "none",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                          }}
+                        >
                           <Typography variant="body2" color="#666">
                             Image not found
                           </Typography>
@@ -1152,130 +1300,131 @@ const Dealer = () => {
               )}
 
               {/* Dealer Users Section */}
-              {selectedDealer.dealerUsers && selectedDealer.dealerUsers.length > 0 && (
-                <>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "var(--purpleShadeBg)",
-                        mb: 2,
-                      }}
-                    >
-                      Dealer Users ({selectedDealer.dealerUsers.length})
-                    </Typography>
-                  </Grid>
-                  
-                  {selectedDealer.dealerUsers.map((user, index) => (
-                    <React.Fragment key={user.id}>
-                      <Grid item xs={12}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 600,
-                            color: "#374151",
-                            mb: 1,
-                          }}
-                        >
-                          User {index + 1}
-                        </Typography>
-                      </Grid>
-                      
-                      <Grid item xs={12} md={4}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#374151",
-                            mb: 0.5,
-                          }}
-                        >
-                          Name
-                        </Typography>
-                        <TextField
-                          value={user.displayName || "-"}
-                          fullWidth
-                          size="small"
-                          variant="outlined"
-                          InputProps={{
-                            readOnly: true,
-                          }}
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              fontSize: "14px",
-                              borderRadius: "12px",
-                              backgroundColor: "#f9f9f9",
-                            },
-                          }}
-                        />
-                      </Grid>
+              {selectedDealer.dealerUsers &&
+                selectedDealer.dealerUsers.length > 0 && (
+                  <>
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 600,
+                          color: "var(--purpleShadeBg)",
+                          mb: 2,
+                        }}
+                      >
+                        Dealer Users ({selectedDealer.dealerUsers.length})
+                      </Typography>
+                    </Grid>
 
-                      <Grid item xs={12} md={4}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#374151",
-                            mb: 0.5,
-                          }}
-                        >
-                          Email
-                        </Typography>
-                        <TextField
-                          value={user.email || "-"}
-                          fullWidth
-                          size="small"
-                          variant="outlined"
-                          InputProps={{
-                            readOnly: true,
-                          }}
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              fontSize: "14px",
-                              borderRadius: "12px",
-                              backgroundColor: "#f9f9f9",
-                            },
-                          }}
-                        />
-                      </Grid>
+                    {selectedDealer.dealerUsers.map((user, index) => (
+                      <React.Fragment key={user.id}>
+                        <Grid item xs={12}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 600,
+                              color: "#374151",
+                              mb: 1,
+                            }}
+                          >
+                            User {index + 1}
+                          </Typography>
+                        </Grid>
 
-                      <Grid item xs={12} md={4}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#374151",
-                            mb: 0.5,
-                          }}
-                        >
-                          Number
-                        </Typography>
-                        <TextField
-                          value={user.number || "-"}
-                          fullWidth
-                          size="small"
-                          variant="outlined"
-                          InputProps={{
-                            readOnly: true,
-                          }}
-                          sx={{
-                            "& .MuiInputBase-root": {
+                        <Grid item xs={12} md={4}>
+                          <Typography
+                            variant="body2"
+                            sx={{
                               fontSize: "14px",
-                              borderRadius: "12px",
-                              backgroundColor: "#f9f9f9",
-                            },
-                          }}
-                        />
-                      </Grid>
-                    </React.Fragment>
-                  ))}
-                </>
-              )}
+                              fontWeight: 500,
+                              color: "#374151",
+                              mb: 0.5,
+                            }}
+                          >
+                            Name
+                          </Typography>
+                          <TextField
+                            value={user.displayName || "-"}
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                fontSize: "14px",
+                                borderRadius: "12px",
+                                backgroundColor: "#f9f9f9",
+                              },
+                            }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} md={4}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#374151",
+                              mb: 0.5,
+                            }}
+                          >
+                            Email
+                          </Typography>
+                          <TextField
+                            value={user.email || "-"}
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                fontSize: "14px",
+                                borderRadius: "12px",
+                                backgroundColor: "#f9f9f9",
+                              },
+                            }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} md={4}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#374151",
+                              mb: 0.5,
+                            }}
+                          >
+                            Number
+                          </Typography>
+                          <TextField
+                            value={user.number || "-"}
+                            fullWidth
+                            size="small"
+                            variant="outlined"
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                fontSize: "14px",
+                                borderRadius: "12px",
+                                backgroundColor: "#f9f9f9",
+                              },
+                            }}
+                          />
+                        </Grid>
+                      </React.Fragment>
+                    ))}
+                  </>
+                )}
             </Grid>
           )}
         </DialogContent>
@@ -1460,7 +1609,6 @@ const Dealer = () => {
                 }}
               />
             </Grid>
-            
           </Grid>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -1664,7 +1812,6 @@ const Dealer = () => {
                 }}
               />
             </Grid>
-            
           </Grid>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -1825,14 +1972,21 @@ const Dealer = () => {
                       size="small"
                       variant="outlined"
                       error={ledgerValidationError && !selectedLedger}
-                      helperText={ledgerValidationError && !selectedLedger ? "Please select a ledger" : ""}
+                      helperText={
+                        ledgerValidationError && !selectedLedger
+                          ? "Please select a ledger"
+                          : ""
+                      }
                       sx={{
                         "& .MuiInputBase-root": {
                           fontSize: "14px",
                           borderRadius: "12px",
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: (ledgerValidationError && !selectedLedger) ? "#d32f2f" : "var(--textFieldBorderColor, #ced4da)",
+                          borderColor:
+                            ledgerValidationError && !selectedLedger
+                              ? "#d32f2f"
+                              : "var(--textFieldBorderColor, #ced4da)",
                           borderRadius: "12px",
                         },
                         "& .MuiFormHelperText-root": {
@@ -1857,7 +2011,7 @@ const Dealer = () => {
                       </Box>
                     </Box>
                   )}
-                  isOptionEqualToValue={(option, value) => 
+                  isOptionEqualToValue={(option, value) =>
                     option.ledgerGUID === value?.ledgerGUID
                   }
                 />
@@ -1886,7 +2040,7 @@ const Dealer = () => {
             disabled={isCreatingMapping}
             sx={{
               backgroundColor: "var(--purpleShadeBg)",
-              color: "#fff !important", 
+              color: "#fff !important",
               border: "none",
               borderRadius: "12px",
               padding: "8px 24px",
